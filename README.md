@@ -136,7 +136,7 @@ Either the trajectory `_ID` attribute field, or `_AUTO_ID`, should be provided i
 **_SAMPLE:**  The command `_SAMPLE` tells the data loader to randomly select a sample the input dataset for reading and parsing. The value for sampling must be in the range $]0.0, 1.0]$ which specifies the percentage of data records to read. The `_SAMPLE` command is particularly useful for large datasets and debugging purposes. 
 
 
-####Array Type Syntax
+#### Array Type Syntax
 
 Arrays (or lists) types are declared by specifying the attributes in the array, i.e. attributes' `NAME`, `TYPE` and `DELIMITER`, the general syntax Array declaration is:
 
