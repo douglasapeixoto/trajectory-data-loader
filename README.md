@@ -34,7 +34,7 @@ The following image shows the data loader GUI window.
     
 -   (2) **LOCAL**: which stores the parsed data into a user-specified directory as `.csv` files, as well as the the *Ouput Data Format* as `output_format.conf`, and the *Metadata* as `metadata.meta`. Local storage currently is only available for trajectory data.
 
--	(3) **HBASE** distributed data storage:
+-	(3) **HBASE** distributed data storage: 
 
 -	(4) **VOLTDB** in-memory storage:
 
@@ -251,7 +251,200 @@ Following we describe the system provided output data formats.
     sK	            DECIMAL
 ```
 
-ertetr
+
+***
+### Examples of Input Trajectory Data and Data Format
+
+**Example 1:** This dataset contains one GPS trajectory record per file. The first six lines of each file contains some descriptions about the source dataset, and can be ignored. The remainder lines contains the list of trajectory coordinates, one coordinate per line. Coordinates contain both spatial-temporal and semantic attributes. 
+
+**Input Trajectory Data 1**
+
+    40.008304,116.319876,0,492,39745.0902662037,2008-10-24,02:09:59
+    40.008413,116.319962,0,491,39745.0903240741,2008-10-24,02:10:04
+    			. . .
+    40.009209,116.321162,0,84,39745.1160416667,2008-10-24,02:47:06
+		
+**Input TDDF Script 1**
+
+```
+# One record per file
+_RECORDS_DELIM      EOF
+# Coordinates in Long/Lat
+_COORD_SYSTEM       GEOGRAPHIC
+# Lines 1 to 6 of each file can be ignored
+_IGNORE_LINES       [1-6]
+# Auto generate ID with prefix 'db1_t'
+_AUTO_ID            db1_t
+# The list of coordinates in each trajectory record.
+# Field 1: Latitude in decimal degrees.
+# Field 2: Longitude in decimal degrees.
+# Field 3: All set to 0 for this dataset.
+# Field 4: Altitude in feet.
+# Field 5: Number of days since 12/30/1899, with fractional part.
+# Field 6: Date as a string.
+# Field 7: Time as a string.
+_COORDINATES     ARRAY ( _LAT      DECIMAL   ,
+					     _LON      DECIMAL   ,
+					     zeroVal   INTEGER   ,
+					     alt       INTEGER   ,
+					     timeFrac  DECIMAL 	 ,
+					     _TIME     DATETIME("yyyy-MM-dd,HH:mm:ss") LN)  EOF
+``` 
+
+***
+**Example 2:** This dataset contains several GPS trajectory record per file, every record is delimited by the character `#`. The first line of each record contains a set of semantic attributes of the trajectory, followed by the list of trajectory coordinates, one coordinate per line. Coordinates contain both spatial-temporal and semantic attributes. 
+
+**Input Trajectory Data 2**
+
+		#,1,3/2/2009 9:23:12 AM,3/2/2009 10:02:17 AM,10.4217737338017 km
+		3/2/2009 9:23:12 AM,39.929961,116.355872,23570
+		3/2/2009 9:23:42 AM,39.926785,116.356007,23526
+		. . .
+		3/2/2009 10:02:17 AM,39.950725,116.295991,27942
+		#,2,3/2/2009 10:04:14 AM,3/2/2009 10:56:23 AM,13.1721183785493 km
+		3/2/2009 10:04:14 AM,39.969738,116.288209,32482
+		3/2/2009 10:04:44 AM,39.973138,116.288661,13208
+		. . .\\
+		3/2/2009 10:56:23 AM,39.99992,116.352966,37268
+
+**Input TDDF Script 2**
+
+```
+_RECORDS_DELIM      #
+_COORD\_SYSTEM		GEOGRAPHIC
+# Creates new IDs with prefix 'db2_t'
+_AUTO_ID			db2_t
+# Ignore the first empty attribute, and the integer ID
+_IGNORE_ATTR		,
+_IGNORE_ATTR		,
+timeIni				STRING	  ,
+timeEnd				STRING	  ,
+length				STRING	  LN
+_COORDINATES		ARRAY ( _TIME   DATETIME("M/d/yyyy HH:mm:ss a")		,
+                            _LAT	DECIMAL	  ,
+							_LON	DECIMAL	  ,
+							alt		INTEGER	  LN )    #
+```
+
+***
+**Example 3:** This dataset contains several GPS trajectory records per file, one record per file line. The dataset contains trajectories from cars, with the list of trajectory coordinates, and a set of semantic attributes. This dataset had been used for map-matching, hence the coordinate points also contain semantic attributes regarding map-matching.  
+
+**Input Trajectory Data 3**
+
+	10000018_1427933750,10000018,1,27|27|27|19,3639865:0:57:114.33708:30.50130:1427933750|3639862:6:59:114.33715:30.50128:1427933759|3624382:46:33:114.33728:30.50168:1427933759|3624382:98:12:114.33742:30.50213:1427933772|3624382:131:17:114.33752:30.50242:1427933778|3630066:0:35:114.33752:30.50242:1427933772|3630066:0:17:114.33752:30.50242:1427933778
+		
+**Input TDDF Script 3**
+
+```
+_RECORDS_DELIM		LN
+_COORD_SYSTEM		GEOGRAPHIC
+_ID					STRING		,
+# The moving object which generated this trajectory
+sourceId			INTEGER	 	,
+# Car type: personal car=1, taxis=2, others=0
+carType				INTEGER	 	,
+citySequence		ARRAY ( cityId     INTEGER    | )	,
+# Information of each mapped points to each link, including linkID,
+# the distance between each mapped point, the distance of mapping, longitude, latitude, time
+_COORDINATES		ARRAY ( linkID	    INTEGER	    :
+	                        oDistance   INTEGER	    :
+ 		                    mDistance	INTEGER     :
+							_LON		DECIMAL		:
+							_LAT		DECIMAL		:
+							_TIME		INTEGER		| )  LN
+```
+
+**Output Format:** Notice that if in all three previous cases the input datasets have been parsed to the same  output format, say `_SPATIAL_TEMPORAL`, the output TDDF will be the following,
+
+```
+_OUTPUT_FORMAT    SPATIAL_TEMPORAL
+_COORD_SYSTEM     GEOGRAPHIC
+_DECIMAL_PREC	  5
+_ID				  STRING
+_COORDINATES	  ARRAY(_LON DECIMAL _LAT DECIMAL _TIME INTEGER)
+```
+
+
+***
+**More Examples**
+
+**Example 4:** Attribute as an Array/List of values (``districts``).
+
+**Input Trajectory Data 4**
+
+    T15654 0 1.0 1.1 1 2.0 2.2 2 3.0 3.3 4 5.0 5.5 5 6.0 6.6|pedestrian|city:garden city
+    T24564 1 2.0 2.2 2 3.0 3.3 4 5.0 5.5 5 6.0 6.6|vehicle|south bank:st lucia:city
+    T34656 2 3.0 3.3 3 4.0 4.4 5 6.0 6.6|bike|gatton:st lucia:new farm
+    T41678 3 4.4 10.4 4 5.5 10.5 5 6.6 10.6|vehicle|st lucia:city:new farm
+    T79841 1 2.0 10.2 3 4.0 10.4 5 6.0 10.6|bus|garden city:buranda
+
+**Input TDDF Script 4**
+
+```
+# if the _COORD_SYSTEM command is omitted, 
+# either the default value 'GEOGRAPHIC', 
+# or the value provided in GUI will be set.
+_RECORDS_DELIM	  LN
+_COORD_SYSTEM     CARTESIAN
+_ID               STRING     LS
+_COORDINATES	  ARRAY ( _TIME  INTEGER  LS
+					      _X     DECIMAL  LS 
+					      _Y     DECIMAL  LS )  |
+type			  STRING     |
+districts		  ARRAY ( name STRING : ) LN
+```
+
+***
+**Example 5:** Coordinates with semantic attributes.
+
+**Input Trajectory Data 5**
+
+	T_1111|0,0.2,0.1,0.0,road,N,1,1.1,1.2,0.0,road,N,3,2.1,2.2,0.0,crossing,N|pedestrian
+    T_2222|0,7.2,7.1,0.0,road,W,1,5.1,5.2,0.0,road,N|vehicle
+	T_3333|1,7,8,0.0,crossing,S,2,1,2,2,road,S,3,5,8,0.0,crossing,E|vehicle
+	T_4444|5,7,8,0.0,road,E,6,4,5,6,crossing,S,7,1,2,0.0,road,S|bike
+	T_5555|3,1.0,2.0,0.0,crossing,N,6,4.2,5.2,0.0,road,E,9,7.5,8.5,0.0,road,W|pedestrian
+
+**Input TDDF Script 5**
+```
+_RECORDS_DELIM	LN
+_COORD_SYSTEM   CARTESIAN
+_ID				STRING    |
+_COORDINATES	ARRAY ( _TIME  INTEGER  , 
+					    _X     DECIMAL  , 
+					    _Y     DECIMAL  , 
+					    _Z     DECIMAL  , 
+					    type   STRING   , 
+					    direction  CHAR , )	 |
+type			STRING	 LN
+```
+
+***
+**Example 6:**
+Trajectory coordinates in Delta compression.
+
+**Input Trajectory Data 6**
+
+	T_1_DELTA|10.0,20.0,1000,N,1.00,2.0,10,N,1.00,3.00,10,E,1.00,2.0,10,E
+	T_2_DELTA|15.0,25.0,2000,S,1.50,2.5,15,S,1.50,3.50,15,W,2.50,2.5,10,S
+	T_3_DELTA|20.0,30.0,1000,E,1.00,1.0,10,E,1.00,1.00,10,N,1.00,1.0,10,N,1.0,1.0,10,S
+	T_4_DELTA|10.0,50.0,2000,W,0.10,0.1,10,W,0.20,0.20,10,W,0.10,0.1,10,W,0.2,0.2,10,N
+	T_5_DELTA|30.0,50.0,3000,S,0.05,0.15,5,S,0.15,0.25,10,S,0.25,0.05,5,S
+
+**Input TDDF Script 6**
+
+```
+_RECORDS_DELIM	LN
+_COORD_SYSTEM   CARTESIAN
+_ID             STRING       |
+# (x,y,t) coordinates in delta compression
+_COORDINATES	ARRAY ( _X     DELTADECIMAL  , 
+					    _Y     DELTADECIMAL  , 
+					    _TIME  DELTADECIMAL  , 
+					    direction      CHAR  , )  LN
+
+```
+**Note:** The parser always outputs the coordinate's spatial-temporal attributes in delta-compression. If the data is already delta-compressed it will be decompressed during the parsing in order to compute the Metadata.  However, the parser will output the data as it is in the original files.
 
 
 # Programming Guide (For Developers)
