@@ -99,9 +99,9 @@ A user specified script containing the format of the input data. The  script con
 
 For each *attribute* of the data record, one must provide the attributes' ``NAME``, ``TYPE`` and ``DELIMITER``, separated by space or tab. 
 
-    NAME:			Name of the field/attribute
-	TYPE*:			Type of the field/attribute to read
-	DELIMITER:		Field delimiter (character)
+    NAME:		Name of the field/attribute
+    TYPE*:		Type of the field/attribute to read
+    DELIMITER:		Field delimiter (character)
 
 When providing the *TDDF* script, the user must declare one attribute per line in the exact order they appear in the input file. The parser will read the attributes' value until the given field ``DELIMITER`` is reached. Attributes' name must be unique in the TDDF. Commands are declared in the form ``NAME``, and ``VALUE``.
 
@@ -110,14 +110,16 @@ When providing the *TDDF* script, the user must declare one attribute per line i
 
 **_ID, _AUTO_ID:** The attribute keyword `_ID` describes the identifier field of each trajectory record. Since in our research not all input datasets provide an ID for the trajectory records, the command `_AUTO_ID` to generate the records' IDs automatically. An example of the `_AUTO_ID` command syntax is given as follows:
 
-    	_AUTO_ID		prefix
-    	# Output the ID attribute as STRING: 
-    	# prefix_1, prefix_2, ...
-	
-	_AUTO_ID		10
-	# Outputs the ID as attribute INTEGER, 
-	# starting from the given number: 
-	# 10, 11, 12, ...
+```
+_AUTO_ID		prefix
+# Output the ID attribute as STRING: 
+# prefix_1, prefix_2, ...
+
+_AUTO_ID		10
+# Outputs the ID as attribute INTEGER, 
+# starting from the given number: 
+# 10, 11, 12, ...
+```
 
 Either the trajectory `_ID` attribute field, or `_AUTO_ID`, should be provided in the input *TDDF*. If both are omitted, the application will use `_AUTO_ID 	1` by default.	
 
@@ -141,7 +143,7 @@ Either the trajectory `_ID` attribute field, or `_AUTO_ID`, should be provided i
 Arrays (or lists) types are declared by specifying the attributes in the array, i.e. attributes' `NAME`, `TYPE` and `DELIMITER`, the general syntax Array declaration is:
 
 ```
-    ARRAY ( NAME   TYPE   DELIMITER  ... )
+ARRAY ( NAME   TYPE   DELIMITER  ... )
 ```
 
 Arrays can be single-valued or multi-valued (e.g. objects) of any of the pre-defined data types, the parser will read the parameters until the given field delimiter is reached. Attributes in the array are specified in the exact order they appear in the source file, similar to any other attribute declaration. Following are some examples of  array type declaration for  `_COORDINATES` field.
@@ -149,33 +151,33 @@ Arrays can be single-valued or multi-valued (e.g. objects) of any of the pre-def
 **Example 1:**  A simple Array of String objects, separated by line-space `LS`
     
 ```
-    ARRAY ( varName  STRING  LS )
+ARRAY ( varName  STRING  LS )
 ```
 
 **Example 2:** Trajectory coordinates as an array/list of spatial-temporal points, comma separated.
 
 ```
-	ARRAY ( _X     DECIMAL  , 
-	        _Y     DECIMAL  , 
-	        _TIME  INTEGER  , )
+ARRAY ( _X     DECIMAL  , 
+	_Y     DECIMAL  , 
+	_TIME  INTEGER  , )
 ``` 
 
 **Example 3:** Trajectory coordinates as an array/list of spatial-temporal points, with `weight` and `ptType` attributes, one coordinate per file line, separated by semicolon.
 
 ```
-	ARRAY ( _X      DECIMAL	 ;
-		_Y	DECIMAL	 ;
-	        _TIME   INTEGER	 ;
-	        weight  DECIMAL	 ;
-	        ptType  STRING	 LN )
+ARRAY ( _X      DECIMAL	 ;
+	_Y	DECIMAL	 ;
+	_TIME   INTEGER	 ;
+	weight  DECIMAL	 ;
+	ptType  STRING	 LN )
 ```
 
 **Example 4:**   Array of spatial-temporal points, comma separated, `_X` and `_Y` attributes delta-compressed.
 
 ```
-	ARRAY ( _X     DELTADECIMAL  ,
-		_Y     DELTADECIMAL  ,
-		_TIME  INTEGER       ,  )
+ARRAY ( _X     DELTADECIMAL  ,
+	_Y     DELTADECIMAL  ,
+	_TIME  INTEGER       ,  )
 ```
 
 
