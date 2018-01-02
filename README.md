@@ -100,7 +100,7 @@ A user specified script containing the format of the input data. The  script con
 For each *attribute* of the data record, one must provide the attributes' ``NAME``, ``TYPE`` and ``DELIMITER``, separated by space or tab. 
 
     NAME:		Name of the field/attribute
-    TYPE*:		Type of the field/attribute to read
+    TYPE:		Type of the field/attribute to read
     DELIMITER:		Field delimiter (character)
 
 When providing the *TDDF* script, the user must declare one attribute per line in the exact order they appear in the input file. The parser will read the attributes' value until the given field ``DELIMITER`` is reached. Attributes' name must be unique in the TDDF. Commands are declared in the form ``NAME``, and ``VALUE``.
