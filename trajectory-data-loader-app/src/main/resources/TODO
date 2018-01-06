@@ -1,0 +1,27 @@
+Colocar um botao VALIDATE pra validar o input data format
+if Geographic -> LAT/LON, if Cartesian -> X/Y	
+Fazer um botao CREATE pra criar o input data format unsando uma GUI
+UNIT tests
+FIX	help HTML 
+Colocar um barra de progresso na GUI
+Se o ID e o AUTO_ID nao forem fornecidos, criar o ID automaticamente 
+	como t_1, t_2, ....
+Implementar os outros OutputDatabase
+Fazer o array tbm poder receber comandos
+Fazer o array tbm poder receber array
+
+O DATETIME so convert para iteiro se tiver dentro do array, fazer pra geral
+
+Deltatypes so se applicam a attributos de array - semantic test
+
+fazer qualquer Decimal sair como _DECIMAL_PREC
+
+Use 
+	DistanceFunctionException
+	@test
+	@see
+	{@link Class}
+	
+	
+
+	

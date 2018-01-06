@@ -1,0 +1,8 @@
+- Adcione a keyword no Keywords, e relacione-a a um Symbol.
+- Se precisar crie um novo Symbol para a keyword em Symbols.
+	- O analisador lexico vai identificar a nova keyword automaticamente (nao precisa alterar nada la)
+- Adicione a validacao sintatica da nova Keyword (commando ou attributo) no Syntax Analyzer
+	- Adicione o commando/attributo no 'Format' se precisar 
+- Adicione a valiacao semantica se precisar, no Semantic Analyzer
+- Implementar o commando no Parser
+- Adicionar o commando/attributo no OutputFormat no DataWriter se for necessario

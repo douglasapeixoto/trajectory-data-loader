@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.effect.Blend?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<Pane fx:id="rootPane" maxHeight="763.0" maxWidth="900.0" minHeight="680.0" minWidth="830.0" prefHeight="720.0" prefWidth="830.0" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1" fx:controller="traminer.loader.gui.DataLoaderGUIController">
+   <children>
+      <TabPane prefHeight="351.0" prefWidth="830.0" tabClosingPolicy="UNAVAILABLE">
+        <tabs>
+          <Tab fx:id="trajLoaderTab" text="Trajectory Data Loader">
+            <content>
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="312.0" prefWidth="830.0">
+                     <children>
+                        <Group layoutX="28.0" layoutY="33.0" />
+                        <Group layoutX="411.0" layoutY="33.0" />
+                        <TextField id="inputDataPathTxt" fx:id="inputDataPathTxt" layoutX="26.0" layoutY="61.0" prefHeight="31.0" prefWidth="386.0" promptText="Path to Input Data Files" />
+                        <Separator layoutX="15.0" layoutY="11.0" prefHeight="3.0" prefWidth="800.0" />
+                        <TextArea id="inputFileFormatTxt" fx:id="inputDataFormatTxt" layoutX="442.0" layoutY="61.0" prefHeight="244.0" prefWidth="365.0" promptText="Edit Input Data Format" style="-fx-font-family: &quot;Consolas&quot;;" />
+                        <TitledPane collapsible="false" layoutX="26.0" layoutY="113.0" prefHeight="83.0" prefWidth="386.0" text="Output Data Format">
+                           <content>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="49.0" prefWidth="384.0">
+                                 <children>
+                                    <Group layoutX="24.0" layoutY="14.0">
+                                       <children>
+                                          <RadioButton fx:id="allBtn" mnemonicParsing="false" selected="true" text="ALL">
+                                             <toggleGroup>
+                                                <ToggleGroup fx:id="outputFormat" />
+                                             </toggleGroup></RadioButton>
+                                          <RadioButton fx:id="spatialBtn" layoutX="81.0" mnemonicParsing="false" prefHeight="21.0" prefWidth="123.0" text="SPATIAL" toggleGroup="$outputFormat" />
+                                          <RadioButton fx:id="spatialTemporalBtn" layoutX="184.0" layoutY="1.0" mnemonicParsing="false" text="SPATIAL-TEMPORAL" toggleGroup="$outputFormat" />
+                                       </children>
+                                    </Group>
+                                 </children>
+                              </AnchorPane>
+                           </content>
+                        </TitledPane>
+                        <Group layoutX="298.0" layoutY="294.0" />
+                        <Button fx:id="loadParseTrajBtn" defaultButton="true" layoutX="26.0" layoutY="266.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="263.0" text="Load and Parse" />
+                        <Button id="saveInputFormatBtn" fx:id="saveInputFormatBtn" layoutX="698.0" layoutY="22.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="50.0" text="Save">
+                           <font>
+                              <Font size="12.0" />
+                           </font></Button>
+                        <Button id="openInputFormatBtn" fx:id="openInputFormatBtn" layoutX="590.0" layoutY="22.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="80.0" text="Open" />
+                        <Button fx:id="openDataBtn" layoutX="332.0" layoutY="22.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="80.0" text="Open" />
+                        <Label layoutX="26.0" layoutY="28.0" text="Input Data Directory:" />
+                        <Label layoutX="442.0" layoutY="27.0" text="Input Data Format:" />
+                        <Button fx:id="loadInputFormatBtn" layoutX="756.0" layoutY="22.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="50.0" text="Load">
+                           <font>
+                              <Font size="12.0" />
+                           </font>
+                        </Button>
+                        <Separator layoutX="682.0" layoutY="20.0" orientation="VERTICAL" prefHeight="35.0" prefWidth="0.0" />
+                        <Button fx:id="trajHelpBtn" cancelButton="true" layoutX="307.0" layoutY="266.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="103.0" text="Help" underline="true">
+                           <effect>
+                              <Blend />
+                           </effect>
+                           <cursor>
+                              <Cursor fx:constant="HAND" />
+                           </cursor>
+                        </Button>
+                        <ChoiceBox fx:id="outputDatabaseChoice" layoutX="196.0" layoutY="211.0" prefHeight="31.0" prefWidth="214.0" />
+                        <Label layoutX="28.0" layoutY="216.0" text="Select Output Database:" />
+                     </children>
+                  </AnchorPane>
+            </content>
+          </Tab>
+          <Tab fx:id="mapLoaderTab" disable="true" text="Map Data Loader">
+            <content>
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                     <children>
+                        <Separator layoutX="15.0" layoutY="11.0" prefHeight="3.0" prefWidth="800.0" />
+                        <Button fx:id="loadParseMapBtn" defaultButton="true" layoutX="26.0" layoutY="152.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="180.0" text="Load and Parse" />
+                        <Button fx:id="mapHelpBtn" cancelButton="true" layoutX="219.0" layoutY="152.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="84.0" text="Help" underline="true">
+                           <effect>
+                              <Blend />
+                           </effect>
+                           <cursor>
+                              <Cursor fx:constant="HAND" />
+                           </cursor>
+                        </Button>
+                        <TitledPane animated="false" collapsible="false" layoutX="26.0" layoutY="32.0" prefHeight="107.0" prefWidth="770.0" text="OpenStreetMap (OSM) File">
+                          <content>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="95.0" prefWidth="530.0">
+                                 <children>
+                                    <TextField fx:id="inputMapPathTxt" layoutX="128.0" layoutY="21.0" prefHeight="31.0" prefWidth="620.0" promptText="Select OSM File" />
+                                    <Button fx:id="openMapBtn" layoutX="25.0" layoutY="21.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="80.0" text="Open " />
+                                 </children>
+                              </AnchorPane>
+                          </content>
+                        </TitledPane>
+                     </children>
+                  </AnchorPane>
+            </content>
+          </Tab>
+        </tabs>
+      </TabPane>
+      <Separator layoutX="16.0" layoutY="555.0" prefHeight="1.0" prefWidth="800.0" />
+      <TabPane layoutX="27.0" layoutY="566.0" prefHeight="140.0" prefWidth="778.0" side="LEFT" tabClosingPolicy="UNAVAILABLE">
+        <tabs>
+          <Tab text="Log">
+               <content>
+                  <BorderPane>
+                     <center>
+                        <ScrollPane fx:id="logScrollPane" prefHeight="140.0" prefWidth="743.0">
+                           <content>
+                              <VBox fx:id="logTxt" prefHeight="138.0" prefWidth="715.0" style="-fx-background-color: #ffff;" />
+                           </content>
+                        </ScrollPane>
+                     </center>
+                  </BorderPane>
+               </content>
+            </Tab>
+        </tabs>
+      </TabPane>
+      <Separator layoutX="14.0" layoutY="360.0" prefHeight="3.0" prefWidth="800.0" />
+      <TitledPane animated="false" collapsible="false" layoutX="28.0" layoutY="373.0" text="Configure Output Database">
+         <content>
+            <TabPane fx:id="dbConfPane" prefHeight="140.0" prefWidth="778.0" tabClosingPolicy="UNAVAILABLE">
+              <tabs>
+                  <Tab fx:id="localTab" closable="false" text="Local Folder">
+                     <content>
+                        <ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="200.0" prefWidth="200.0">
+                          <content>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="200.0" prefWidth="200.0">
+                                 <children>
+                                    <Button fx:id="openOuputFolderBtn" layoutX="673.0" layoutY="46.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="80.0" text="Open" />
+                                    <Label layoutX="24.0" layoutY="13.0" text="Output Data Directory:" />
+                                    <TextField fx:id="outputDataPathTxt" layoutX="24.0" layoutY="46.0" prefHeight="31.0" prefWidth="630.0" promptText="Local Path to Output Data" />
+                                 </children>
+                              </AnchorPane>
+                          </content>
+                        </ScrollPane>
+                     </content>
+                  </Tab>
+                  <Tab fx:id="mongodbTab" closable="false" disable="true" text="MongoDB">
+                     <content>
+                        <ScrollPane fitToWidth="true" pannable="true" pickOnBounds="false" prefHeight="169.0" prefWidth="530.0">
+                          <content>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="96.0" prefWidth="692.0" style="-fx-background-color: 56;">
+                                 <children>
+                                    <TextField fx:id="mongodbHostTxt" layoutX="146.0" layoutY="14.0" prefHeight="31.0" prefWidth="352.0" />
+                                    <TextField fx:id="mongodbDatabaseTxt" layoutX="146.0" layoutY="58.0" prefHeight="31.0" prefWidth="227.0" />
+                                    <Label layoutX="55.0" layoutY="19.0" text="Host Name:" />
+                                    <Label layoutX="24.0" layoutY="63.0" text="Database Name:" />
+                                    <Label layoutX="528.0" layoutY="19.0" text="Port Number:" />
+                                    <TextField fx:id="mongodbPortTxt" alignment="CENTER_RIGHT" layoutX="635.0" layoutY="14.0" prefHeight="31.0" prefWidth="120.0" />
+                                    <Button fx:id="mongodbDefaultBtn" layoutX="655.0" layoutY="57.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="100.0" text="Set Default">
+                                       <font>
+                                          <Font size="12.0" />
+                                       </font>
+                                    </Button>
+                                    <Button fx:id="mongodbListBtn" layoutX="529.0" layoutY="58.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="100.0" text="List Databases">
+                                       <font>
+                                          <Font size="12.0" />
+                                       </font>
+                                    </Button>
+                                    <Button fx:id="mongodbStartBtn" layoutX="398.0" layoutY="58.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="100.0" text="Start MongoDB">
+                                       <font>
+                                          <Font size="12.0" />
+                                       </font>
+                                    </Button>
+                                 </children>
+                              </AnchorPane>
+                          </content>
+                        </ScrollPane>
+                     </content>
+                  </Tab>
+                  <Tab fx:id="hbaseTab" closable="false" disable="true" text="HBase (HDFS)">
+                     <content>
+                        <ScrollPane prefHeight="91.0" prefWidth="778.0">
+                          <content>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="99.0" prefWidth="757.0" />
+                          </content>
+                        </ScrollPane>
+                     </content>
+                  </Tab>
+                  <Tab fx:id="voltdbTab" closable="false" disable="true" text="VoltDB (In-Memory)">
+                    <content>
+                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                           <children>
+                              <ScrollPane prefHeight="200.0" prefWidth="200.0">
+                                 <content>
+                                    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="99.0" prefWidth="760.0" />
+                                 </content>
+                              </ScrollPane>
+                           </children>
+                        </AnchorPane>
+                    </content>
+                  </Tab>
+              </tabs>
+            </TabPane>
+         </content>
+      </TitledPane>
+   </children>
+</Pane>
