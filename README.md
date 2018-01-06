@@ -32,7 +32,7 @@ The following image shows the data loader GUI window.
 	    * **Optional:** You can start the MongoDB server from within the data loader GUI, you first need to setup the `MONGO_HOME` path in your OS environment variables to the binary folder of MongoDB installation, ex: `/path-to-mongodb/Server/3.x/bin`, then click in **Start MongoDB** in the database configuration tab in the application GUI.
     * **Trajectory Collections:** The application will store the parsed data, the *Ouput TDDF*, and the *Metadata* into the default MongoDB collections: `"trajectorydata"` and `"metadata"`.
     
--   (2) **LOCAL**: which stores the parsed data into a user-specified directory as `.csv` files, as well as the the *Ouput Data Format* as `output_format.conf`, and the *Metadata* as `metadata.meta`. Local storage currently is only available for trajectory data.
+-   (2) **LOCAL**: which stores the parsed data into a user-specified directory as `.csv` files, as well as the the *Ouput Data Format* as `output-format.tddf`, and the *Metadata* as `metadata.meta`. Local storage currently is only available for trajectory data.
 
 -	(3) **HBASE** distributed data storage: 
 
@@ -133,9 +133,9 @@ Either the trajectory `_ID` attribute field, or `_AUTO_ID`, should be provided i
 
 **_IGNORE_ATTR:**	The command `_IGNORE_ATTR`, on the other hand, ignores the attribute in the position of its declaration in all data records, and it is followed by the attributer's delimiter. Both `_IGNORE_LINES` and `_IGNORE_ATTR` commands are useful, for instance, when not all data records, file lines, or attributes from the input dataset are necessary for the user application.
 	
-**_DECIMAL_PREC:**  The command `_DECIMAL_PREC` tells the parser the number of decimal points $d$ to consider in decimal values, the default value is $d=5$. Attributes declared as `DECIMAL` will be converted to a integer number in the format $value * 10 ^ d$, and compressed using a lossless delta-compression to reduce storage space.
+**_DECIMAL_PREC:**  The command `_DECIMAL_PREC` tells the parser the number of decimal points `d` to consider in decimal values, the default value is `d=5`. Attributes declared as `DECIMAL` will be converted to a integer number in the format `value * 10 ^ d`, and compressed using a lossless delta-compression to reduce storage space.
 
-**_SAMPLE:**  The command `_SAMPLE` tells the data loader to randomly select a sample the input dataset for reading and parsing. The value for sampling must be in the range $]0.0, 1.0]$ which specifies the percentage of data records to read. The `_SAMPLE` command is particularly useful for large datasets and debugging purposes. 
+**_SAMPLE:**  The command `_SAMPLE` tells the data loader to randomly select a sample the input dataset for reading and parsing. The value for sampling must be in the range `]0.0, 1.0]` which specifies the percentage of data records to read. The `_SAMPLE` command is particularly useful for large datasets and debugging purposes. 
 
 **DATETIME:** `DATETIME` values are declared and parsed using [Java DateTimeFormatter][java-datetime]. `DATETIME` types must be declared as `DATETIME["pattern"]`, where ``pattern`` describes the attribute using the DateTimeFormatter format.
 
@@ -188,7 +188,7 @@ ARRAY ( _X     DELTADECIMAL  ,
 
 After the input data is parsed, the data in the new format is stored into any of our primary storage platforms, in the output format of choice, along with the output *TDDF*  and a *Metadata* file, containing information and statistics about the input trajectory dataset, such as *number of records*, statics about the *speed, length, duration, sampling rate*, and *coverage* of the trajectory records. The system generated output *TDDF* file, on the other hand, contains the specifications of the output data, that is, the  `NAME` and `TYPE` of all attributes in the output data.
 
- e provide three different output formats in our application, namely  `ALL, SPATIAL, SPATIAL-TEMPORAL`. All output data formats follow a *CSV* (comma separated values) style. Attribute values are separated by semicolon, and array items are separated by comma. The output files contain one trajectory record per file line. Furthermore, to reduce storage consumption, the spatial-temporal attributes in the list of coordinates are delta-compressed. The records’ attributes are always in the order:
+We provide three different output formats in our application, namely  `ALL, SPATIAL, SPATIAL-TEMPORAL`. All output data formats follow a *CSV* (comma separated values) style, or *BSON* format in MongoDB. Attribute values are separated by semicolon, and array items are separated by comma. The output files contain one trajectory record per file line. Furthermore, to reduce storage consumption, the spatial-temporal attributes in the list of coordinates are delta-compressed. The records’ attributes are always in the order:
 
     _ID;_COORDINATES;_OTHER_ATTRIBUTES
 
@@ -251,10 +251,10 @@ Following we describe the system provided output data formats.
     _COORDINATES	ARRAY(_X     DECIMAL
 			      _Y     DECIMAL
 			      _TIME  INTEGER)
-    s1	            STRING
-    s2	            INTEGER
+    s1	            	STRING
+    s2	            	INTEGER
         ...	
-    sK	            DECIMAL
+    sK	            	DECIMAL
 ```
 
 
@@ -288,12 +288,12 @@ _AUTO_ID            db1_t
 # Field 5: Number of days since 12/30/1899, with fractional part.
 # Field 6: Date as a string.
 # Field 7: Time as a string.
-_COORDINATES     ARRAY ( _LAT      DECIMAL   ,
-			 _LON      DECIMAL   ,
-			 zeroVal   INTEGER   ,
-			 alt       INTEGER   ,
-			 timeFrac  DECIMAL   ,
-			 _TIME     DATETIME["yyyy-MM-dd,HH:mm:ss"] LN)  EOF
+_COORDINATES     ARRAY( _LAT      DECIMAL   ,
+			_LON      DECIMAL   ,
+			zeroVal   INTEGER   ,
+			alt       INTEGER   ,
+			timeFrac  DECIMAL   ,
+			_TIME     DATETIME["yyyy-MM-dd,HH:mm:ss"] LN)  EOF
 ``` 
 
 ***
@@ -313,20 +313,20 @@ _COORDINATES     ARRAY ( _LAT      DECIMAL   ,
 **Input TDDF Script 2**
 
 ```
-_RECORDS_DELIM      #
+_RECORDS_DELIM      	#
 _COORD\_SYSTEM		GEOGRAPHIC
 # Creates new IDs with prefix 'db2_t'
-_AUTO_ID	    db2_t
+_AUTO_ID	    	db2_t
 # Ignore the first empty attribute, and the integer ID
 _IGNORE_ATTR		,
 _IGNORE_ATTR		,
 timeIni			STRING	  ,
 timeEnd			STRING	  ,
 length			STRING	  LN
-_COORDINATES		ARRAY ( _TIME   DATETIME["M/d/yyyy HH:mm:ss a"]    ,
-                                _LAT	DECIMAL	  ,
-				_LON	DECIMAL	  ,
-				alt	INTEGER	  LN )    #
+_COORDINATES		ARRAY( _TIME    DATETIME["M/d/yyyy HH:mm:ss a"]    ,
+                               _LAT	DECIMAL	  ,
+			       _LON	DECIMAL	  ,
+			       alt	INTEGER	  LN )    #
 ```
 
 ***
@@ -349,9 +349,9 @@ carType			INTEGER	 	,
 citySequence		ARRAY ( cityId     INTEGER    | )	,
 # Information of each mapped points to each link, including linkID,
 # the distance between each mapped point, the distance of mapping, longitude, latitude, time
-_COORDINATES		ARRAY ( linkID	    INTEGER   :
-	                        oDistance   INTEGER   :
- 		                mDistance   INTEGER   :
+_COORDINATES		ARRAY( linkID	    INTEGER   :
+	                       oDistance   INTEGER   :
+ 		               mDistance   INTEGER   :
 				_LON	    DECIMA    :
 				_LAT	    DECIMAL   :
 				_TIME	    INTEGER   | )  LN
@@ -360,10 +360,10 @@ _COORDINATES		ARRAY ( linkID	    INTEGER   :
 **Output Format:** Notice that if in all three previous cases the input datasets have been parsed to the same  output format, say `_SPATIAL_TEMPORAL`, the output TDDF will be the following:
 
 ```
-_OUTPUT_FORMAT    SPATIAL_TEMPORAL
-_COORD_SYSTEM     GEOGRAPHIC
+_OUTPUT_FORMAT	  SPATIAL_TEMPORAL
+_COORD_SYSTEM	  GEOGRAPHIC
 _DECIMAL_PREC	  5
-_ID				  STRING
+_ID		  STRING
 _COORDINATES	  ARRAY(_LON DECIMAL _LAT DECIMAL _TIME INTEGER)
 ```
 
@@ -384,7 +384,6 @@ db2_t_2;11628820,3996973,1235988254000,46,340,30000
 {_id : "db2_t_2", _coordinates : [11628820,3996973,1235988254000,46,340,30000]}
 {_id : "1018_1450", _coordinates : [11433708,3050130,1427933750,7,-2,9]}
 ```
-
 
 
 ***
@@ -409,11 +408,11 @@ db2_t_2;11628820,3996973,1235988254000,46,340,30000
 _RECORDS_DELIM	  LN
 _COORD_SYSTEM     CARTESIAN
 _ID               STRING     LS
-_COORDINATES	  ARRAY ( _TIME  INTEGER  LS
-			  _X     DECIMAL  LS 
-			  _Y     DECIMAL  LS )  |
-type		 STRING     |
-districts	 ARRAY ( name STRING : ) LN
+_COORDINATES	  ARRAY( _TIME  INTEGER  LS
+			 _X     DECIMAL  LS 
+			 _Y     DECIMAL  LS )  |
+type		  STRING     |
+districts	  ARRAY( name STRING : ) LN
 ```
 
 ***
@@ -432,13 +431,13 @@ districts	 ARRAY ( name STRING : ) LN
 _RECORDS_DELIM	  LN
 _COORD_SYSTEM     CARTESIAN
 _ID		  STRING    |
-_COORDINATES	  ARRAY ( _TIME  INTEGER  , 
-			  _X     DECIMAL  , 
-			  _Y     DECIMAL  , 
-			  _Z     DECIMAL  , 
-			  type   STRING   , 
-			  direction  CHAR , )	 |
-type	         STRING	   LN
+_COORDINATES	  ARRAY( _TIME  INTEGER  , 
+			 _X     DECIMAL  , 
+			 _Y     DECIMAL  , 
+			 _Z     DECIMAL  , 
+			 type   STRING   , 
+			 direction  CHAR , )	 |
+type	          STRING	   LN
 ```
 
 ***
@@ -460,10 +459,10 @@ _RECORDS_DELIM	LN
 _COORD_SYSTEM   CARTESIAN
 _ID             STRING       |
 # (x,y,t) coordinates in delta compression
-_COORDINATES	ARRAY ( _X     DELTADECIMAL  , 
-		        _Y     DELTADECIMAL  , 
-		        _TIME  DELTADECIMAL  , 
-		        direction      CHAR  , )  LN
+_COORDINATES	ARRAY( _X     DELTADECIMAL  , 
+		       _Y     DELTADECIMAL  , 
+		       _TIME  DELTADECIMAL  , 
+		       direction      CHAR  , )  LN
 
 ```
 **Note:** The parser always outputs the coordinate's spatial-temporal attributes in delta-compression. If the data is already delta-compressed it will be decompressed during the parsing in order to compute the Metadata.  However, the parser will output the data as it is in the original files.
