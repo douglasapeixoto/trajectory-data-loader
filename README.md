@@ -66,7 +66,7 @@ A user specified script containing the format of the input data. The  script con
 |`STRING`          | Attribute Type	        | String character
 |`BOOLEAN`	       | Attribute Type	        | Logic type (True/False)
 |`CHAR`	           | Attribute Type	        | Single character
-|`DATETIME`	       | Attribute Type	        | Date and time (Java DateTimeFormat)
+|`DATETIME`	       | Attribute Type	        | Date and time (Java DateTimeFormatter)
 |`DELTAINTEGER`	   | Attribute Type	        | Integer delta compressed number
 |`DELTADECIMAL`	   | Attribute Type	        | Decimal delta compressed number
 |`ARRAY`	       | Attribute Type         | Array type (List)
@@ -136,6 +136,8 @@ Either the trajectory `_ID` attribute field, or `_AUTO_ID`, should be provided i
 **_DECIMAL_PREC:**  The command `_DECIMAL_PREC` tells the parser the number of decimal points $d$ to consider in decimal values, the default value is $d=5$. Attributes declared as `DECIMAL` will be converted to a integer number in the format $value * 10 ^ d$, and compressed using a lossless delta-compression to reduce storage space.
 
 **_SAMPLE:**  The command `_SAMPLE` tells the data loader to randomly select a sample the input dataset for reading and parsing. The value for sampling must be in the range $]0.0, 1.0]$ which specifies the percentage of data records to read. The `_SAMPLE` command is particularly useful for large datasets and debugging purposes. 
+
+**DATETIME:** `DATETIME` values are declared and parsed using [Java DateTimeFormatter][java-datetime]. `DATETIME` types must be declared as `DATETIME["pattern"]`, where ``pattern`` describes the attribute using the DateTimeFormatter format.
 
 
 #### Array Type Syntax
@@ -265,8 +267,7 @@ Following we describe the system provided output data formats.
 
     40.008304,116.319876,0,492,39745.0902662037,2008-10-24,02:09:59
     40.008413,116.319962,0,491,39745.0903240741,2008-10-24,02:10:04
-    			. . .
-    40.009209,116.321162,0,84,39745.1160416667,2008-10-24,02:47:06
+    	. . .
 		
 **Input TDDF Script 1**
 
@@ -292,7 +293,7 @@ _COORDINATES     ARRAY ( _LAT      DECIMAL   ,
 			 zeroVal   INTEGER   ,
 			 alt       INTEGER   ,
 			 timeFrac  DECIMAL   ,
-			 _TIME     DATETIME("yyyy-MM-dd,HH:mm:ss") LN)  EOF
+			 _TIME     DATETIME["yyyy-MM-dd,HH:mm:ss"] LN)  EOF
 ``` 
 
 ***
@@ -304,12 +305,10 @@ _COORDINATES     ARRAY ( _LAT      DECIMAL   ,
 	3/2/2009 9:23:12 AM,39.929961,116.355872,23570
 	3/2/2009 9:23:42 AM,39.926785,116.356007,23526
 	. . .
-	3/2/2009 10:02:17 AM,39.950725,116.295991,27942
 	#,2,3/2/2009 10:04:14 AM,3/2/2009 10:56:23 AM,13.1721183785493 km
 	3/2/2009 10:04:14 AM,39.969738,116.288209,32482
 	3/2/2009 10:04:44 AM,39.973138,116.288661,13208
-	. . .\\
-	3/2/2009 10:56:23 AM,39.99992,116.352966,37268
+	. . .
 
 **Input TDDF Script 2**
 
@@ -324,7 +323,7 @@ _IGNORE_ATTR		,
 timeIni			STRING	  ,
 timeEnd			STRING	  ,
 length			STRING	  LN
-_COORDINATES		ARRAY ( _TIME   DATETIME("M/d/yyyy HH:mm:ss a")    ,
+_COORDINATES		ARRAY ( _TIME   DATETIME["M/d/yyyy HH:mm:ss a"]    ,
                                 _LAT	DECIMAL	  ,
 				_LON	DECIMAL	  ,
 				alt	INTEGER	  LN )    #
@@ -335,7 +334,7 @@ _COORDINATES		ARRAY ( _TIME   DATETIME("M/d/yyyy HH:mm:ss a")    ,
 
 **Input Trajectory Data 3**
 
-	10000018_1427933750,10000018,1,27|27|27|19,3639865:0:57:114.33708:30.50130:1427933750|3639862:6:59:114.33715:30.50128:1427933759|3624382:46:33:114.33728:30.50168:1427933759|3624382:98:12:114.33742:30.50213:1427933772|3624382:131:17:114.33752:30.50242:1427933778|3630066:0:35:114.33752:30.50242:1427933772|3630066:0:17:114.33752:30.50242:1427933778
+	1018_1450,1018,1,27|27|27|19,3639865:0:57:114.33708:30.50130:1427933750|3639862:6:59:114.33715:30.50128:1427933759	
 		
 **Input TDDF Script 3**
 
@@ -358,15 +357,34 @@ _COORDINATES		ARRAY ( linkID	    INTEGER   :
 				_TIME	    INTEGER   | )  LN
 ```
 
-**Output Format:** Notice that if in all three previous cases the input datasets have been parsed to the same  output format, say `_SPATIAL_TEMPORAL`, the output TDDF will be the following,
+**Output Format:** Notice that if in all three previous cases the input datasets have been parsed to the same  output format, say `_SPATIAL_TEMPORAL`, the output TDDF will be the following:
 
 ```
 _OUTPUT_FORMAT    SPATIAL_TEMPORAL
 _COORD_SYSTEM     GEOGRAPHIC
 _DECIMAL_PREC	  5
-_ID		  STRING
-_COORDINATES	  ARRAY(_LON  DECIMAL  _LAT  DECIMAL  _TIME  INTEGER)
+_ID				  STRING
+_COORDINATES	  ARRAY(_LON DECIMAL _LAT DECIMAL _TIME INTEGER)
 ```
+
+**Output Data:** The output formated data, in .CSV and .BSON documents, for the three datasets is the following. Notice that now all datasets are in the same format `SPATIAL_TEMPORAL`.
+
+**Output Trajectory Data (.csv)**
+```
+db1_t_1;11631987,4000830,1224814199000,8,10,5000
+db2_t_1;11635587,3992996,1235985792000,13,-318,30000
+db2_t_2;11628820,3996973,1235988254000,46,340,30000
+1018_1450,11433708,3050130,1427933750,7,-2,9
+```
+
+**Output Trajectory Data (.bson)**
+```
+{_id : "db1_t_1", _coordinates : [11631987,4000830,1224814199000,8,10,5000]}
+{_id : "db2_t_1", _coordinates : [11635587,3992996,1235985792000,13,-317,30000]}
+{_id : "db2_t_2", _coordinates : [11628820,3996973,1235988254000,46,340,30000]}
+{_id : "1018_1450", _coordinates : [11433708,3050130,1427933750,7,-2,9]}
+```
+
 
 
 ***
@@ -586,7 +604,7 @@ public void loadParseTrajectoryData() {
 In **Example 2** the application will output the parsed data, the *Ouput Data Format*, and the metadata into the default MongoDB collections: `"trajectorydata"` and `"metadata"`. 
 
 
-
+[java-datetime]: <https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html>
 [de9im]: <http://en.wikipedia.org/wiki/DE-9IM/>
 [weka]: <http://www.cs.waikato.ac.nz/ml/weka/index.html>
 [elki]: <http://elki.dbs.ifi.lmu.de/>
