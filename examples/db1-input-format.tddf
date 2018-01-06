@@ -1,0 +1,22 @@
+# Lines 1 to 6 are useless in this dataset, and can be ignored. 
+# Points are described in following lines, one for each line.
+# Field 1: Latitude in decimal degrees.
+# Field 2: Longitude in decimal degrees.
+# Field 3: All set to 0 for this dataset.
+# Field 4: Altitude in feet (-777 if not valid).
+# Field 5: Date - number of days (with fractional part) that have passed since 12/30/1899.
+# Field 6: Date as a string.
+# Field 7: Time as a string.
+# Note that field 5 and field 6&7 represent the same date/time in this dataset. You may use either of them.
+# one trajectory record per file
+_RECORDS_DELIM	EOF
+_COORD_SYSTEM	GEOGRAPHIC
+_IGNORE_LINES	[1-6]
+# auto generate ID with prefix 'db1_t'
+_AUTO_ID		db1_t
+_COORDINATES	ARRAY(_Y 		DECIMAL	,
+					  _X		DECIMAL	,
+					  zeroVal	INTEGER	,
+					  alt		DECIMAL	,
+					  timeFrac	DECIMAL	,
+					  _TIME		DATETIME["yyyy-MM-dd,HH:mm:ss"] LN)		EOF

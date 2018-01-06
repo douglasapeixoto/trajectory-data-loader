@@ -1,0 +1,60 @@
+# One trajectory record per line
+_RECORDS_DELIM		LN
+_COORD_SYSTEM		GEOGRAPHIC
+# Attributes declaration
+_ID					STRING		,
+dataSource			STRING		,
+carID				STRING		,
+# car type: personal car=1, taxis=2, others=0
+carType				INTEGER		,
+linkSequence		ARRAY(link	INTEGER |)		,
+gridSequence		ARRAY(grid	INTEGER	|)		,
+meshSequence		ARRAY(mesh	INTEGER	|)		,
+citySequence		ARRAY(city	INTEGER	|)		,
+# the time sequence of entering the link
+enterTimeSequence	ARRAY(enterTime	INTEGER	|)	,
+# speed of passing each link (Km/h)
+speedSequence		ARRAY(speed	INTEGER	|)		,
+# travelled length of each link
+lengthSequence		ARRAY(length INTEGER |)		,
+numberOfLink		INTEGER		,
+status				INTEGER		,
+event				INTEGER		,
+# travel distance, unit meters (m)
+travelDistance		INTEGER		,
+# travel time, unit seconds (s)
+travelTime			INTEGER		,
+# average speed, unit (Km/h)
+averageSpeed		INTEGER		,
+oLinkID				INTEGER		,
+dLinkID				INTEGER		,
+splitConfidence		DECIMAL		,
+integrityConfidence	DECIMAL		,
+confidence			DECIMAL		,
+oLongitude			DECIMAL		,
+oLatitude			DECIMAL		,
+dLongitude			DECIMAL		,
+dLatitude			DECIMAL		,
+# time start from 1970, unit is second (s)
+oTime				INTEGER		,
+dTime				INTEGER		,
+# Original GPS points
+# GPS points include: lon, lat, speed, timestamp, direction. 
+# Each point is splited by | 
+# The point sequence is recorded as the offset value from first point.
+gpsPoints		ARRAY(lonOffset		INTEGER		:
+					  latOffset		INTEGER		:
+					  speed			INTEGER		:
+					  timeOffset	INTEGER		:
+					  direction		INTEGER		|)	,
+# The information of each mapped points to each link, 
+# including linkID, the distance between each mapped point to the starting point, 
+# the distance of mapping, longitude, latitude, time
+_COORDINATES	ARRAY(linkID		INTEGER		:
+					  oDistance		INTEGER		:
+					  mDistance		INTEGER		:
+					  _X			DECIMAL		:
+					  _Y			DECIMAL		:
+					  _TIME			INTEGER		|)		LN
+# Note: OpenLR representation of trajectory shape are not in this file
+# Note: AgoraC representation of trajectory shape are not in this file

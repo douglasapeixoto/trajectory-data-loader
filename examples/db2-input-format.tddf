@@ -1,0 +1,13 @@
+_RECORDS_DELIM 	#
+_COORD_SYSTEM 	GEOGRAPHIC
+# auto generate ID with prefix 'db2_t'
+_AUTO_ID		db2_t
+_IGNORE_ATTR 	,
+_IGNORE_ATTR 	,
+timeIni			STRING 		,
+timeEnd 		STRING 		,
+length 			STRING 		LN
+_COORDINATES 	ARRAY(_TIME	DATETIME["M/d/yyyy H:mm:ss a"]	,
+					  _LAT	DECIMAL	,
+					  _LON	DECIMAL ,
+					  alt	INTEGER LN) 	#

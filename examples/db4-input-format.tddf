@@ -1,0 +1,15 @@
+# Dataset description
+# One trajectory record per file.
+# One coordinate point per file line.
+# Fields (in each line):
+# 1 - Trajectory ID
+# 2 - Time as a String
+# 3 - Longitude as a Decimal
+# 4 - Latitude as a Decimal
+_RECORDS_DELIM	EOF
+_COORD_SYSTEM	GEOGRAPHIC
+_AUTO_ID		db4_t
+_COORDINATES	ARRAY(tid		INTEGER		,
+					  _TIME		DATETIME["yyyy-MM-dd HH:mm:ss"]	,
+					  _X		DECIMAL		,
+					  _Y		DECIMAL		LN)		EOF
