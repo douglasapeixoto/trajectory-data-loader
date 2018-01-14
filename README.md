@@ -468,6 +468,50 @@ _COORDINATES	ARRAY( _X     DELTADECIMAL  ,
 **Note:** The parser always outputs the coordinate's spatial-temporal attributes in delta-compression. If the data is already delta-compressed it will be decompressed during the parsing in order to compute the Metadata.  However, the parser will output the data as it is in the original files.
 
 
+
+# Metadata
+----------
+The following image shows the output Metadata window generated after the data is parsed. 
+
+![img](https://github.com/douglasapeixoto/trajectory-data-loader/blob/master/gui-metadata.png)
+
+The complete set of dataset attributes in the Metadata file is described bellow:
+
+| Metadata          | Description       |
+| :-------          | :----             |
+|`NUM_FILES`| Number of files in the input dataset |
+|`NUM_ATTRIBUTES`|Number of attributes in the input trajectories|
+|`NUM_COORD_ATTRIBUTES`|Number of coordinates' attributes|
+|`NUM_TRAJECTORIES`|Total number of trajectories in the input dataset|
+|`NUM_POINTS`|Total number of points/coordinates in the input dataset|
+|`MIN_PTS_PER_TRAJECTORY`|Minimum number of points per trajectory|
+|`MAX_PTS_PER_TRAJECTORY`|Maximum number of points per trajectory|
+|`AVG_PTS_PER_TRAJECTORY`|Average number of points per trajectory|
+|`STD_PTS_PER_TRAJECTORY`|Standard Deviation of the number of points per trajectory|
+|`MIN_TRAJECTORY_LENGTH`|Minimum trajectory length in the dataset|
+|`MAX_TRAJECTORY_LENGTH`|Maximum trajectory length in the dataset|
+|`AVG_TRAJECTORY_LENGTH`|Average trajectories length in the dataset|
+|`STD_TRAJECTORY_LENGTH`|Standard Deviation of the  trajectories length|
+|`MIN_TRAJECTORY_DURATION`|Minimum trajectory duration in the dataset|
+|`MAX_TRAJECTORY_DURATION`|Maximum trajectory duration in the dataset|
+|`AVG_TRAJECTORY_DURATION`|Average trajectories duration in the dataset|
+|`STD_TRAJECTORY_DURATION`|Standard Deviation of the trajectories duration|
+|`MIN_TRAJECTORY_SPEED`|Minimum trajectory speed in the dataset|
+|`MAX_TRAJECTORY_SPEED`|Maximum trajectory speed in the dataset|
+|`AVG_TRAJECTORY_SPEED`|Average trajectories speed in the dataset|
+|`STD_TRAJECTORY_SPEED`|Standard Deviation of the trajectories speed|
+|`MIN_SAMPLING_RATE`|Minimum trajectory sampling rate in the dataset|
+|`MAX_SAMPLING_RATE`|Maximum trajectory sampling rate in the dataset|
+|`AVG_SAMPLING_RATE`|Average trajectories sampling rate in the dataset|
+|`STD_SAMPLING_RATE`|Standard Deviation of the trajectories sampling rate|
+|`MIN_X`|Minimum value of X/Longitude in the dataset (coverage)|
+|`MIN_Y`|Minimum value of Y/Latitude in the dataset (coverage)|
+|`MIN_T`|Minimum value of Time-Stamp in the dataset (coverage)|
+|`MAX_X`|Maximum value of X/Longitude in the dataset (coverage)|
+|`MAX_Y`|Maximum value of Y/Latitude in the dataset (coverage)|
+|`MAX_T`|Maximum value of X/Longitude in the dataset (coverage)|
+
+
 # Programming Guide (For Developers)
 ----------
 In this documentation we opt to use the [Eclipse][eclipse] IDE. However, for other Java IDEs, such as [Intellij][intellij] and [NetBeans][netbeans], the process is rather similar.
