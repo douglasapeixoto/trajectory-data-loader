@@ -16,67 +16,64 @@ import traminer.util.spatial.distance.PointDistanceFunction;
  * one input trajectory at time and updating the metadata
  * statistics after each addition.
  * 
- * @author uqdalves
+ * @author douglasapeixoto
  */
 @SuppressWarnings("serial")
 public final class MetadataService implements SpatialInterface {
 	// Point distance measure to use
-	private final PointDistanceFunction distFunc;
+	private static PointDistanceFunction distFunc;
 	// Total Number of trajectories processed
-	private long trajectoriesCount = 0;
+	private static long trajectoriesCount = 0;
 	// Total number of trajectory points processed
-	private long pointsCount = 0;
+	private static long pointsCount = 0;
 	// Total number of data files processed
-	private long filesCount = 0;
+	private static long filesCount = 0;
 	
 	// Arrays containing the (x,y,time) values of the 
 	// current trajectory
-	private Decimal[] xValues, yValues, tValues;
+	private static Decimal[] xValues, yValues, tValues;
 	// Number of points in the current trajectory
-	private int numPts = 0;
+	private static int numPts = 0;
 	
 	// Statics about the total number of points
-	private Decimal numPtsSum = new Decimal(0);
-	private Decimal numPtsSqr = new Decimal(0);
-	private Decimal numPtsMin  = new Decimal(INFINITY);
-	private Decimal numPtsMax  = new Decimal(-INFINITY);
+	private static Decimal numPtsSum = new Decimal(0);
+	private static Decimal numPtsSqr = new Decimal(0);
+	private static Decimal numPtsMin  = new Decimal(INFINITY);
+	private static Decimal numPtsMax  = new Decimal(-INFINITY);
 	// Statics about the length of the trajectories
-	private Decimal lengthSum = new Decimal(0);
-	private Decimal lengthSqr = new Decimal(0);
-	private Decimal lengthMin = new Decimal(INFINITY);
-	private Decimal lengthMax = new Decimal(-INFINITY);
+	private static Decimal lengthSum = new Decimal(0);
+	private static Decimal lengthSqr = new Decimal(0);
+	private static Decimal lengthMin = new Decimal(INFINITY);
+	private static Decimal lengthMax = new Decimal(-INFINITY);
 	// Statics about the time duration of the trajectories
-	private Decimal durationSum = new Decimal(0);
-	private Decimal durationSqr = new Decimal(0);
-	private Decimal durationMin = new Decimal(INFINITY);
-	private Decimal durationMax = new Decimal(-INFINITY);
+	private static Decimal durationSum = new Decimal(0);
+	private static Decimal durationSqr = new Decimal(0);
+	private static Decimal durationMin = new Decimal(INFINITY);
+	private static Decimal durationMax = new Decimal(-INFINITY);
 	// Statics about the speed of the trajectories
-	private Decimal speedSum = new Decimal(0);
-	private Decimal speedSqr = new Decimal(0);
-	private Decimal speedMin = new Decimal(INFINITY);
-	private Decimal speedMax = new Decimal(-INFINITY);
+	private static Decimal speedSum = new Decimal(0);
+	private static Decimal speedSqr = new Decimal(0);
+	private static Decimal speedMin = new Decimal(INFINITY);
+	private static Decimal speedMax = new Decimal(-INFINITY);
 	// Statics about the sampling rate of the trajectories
-	private Decimal samplingSum = new Decimal(0);
-	private Decimal samplingSqr = new Decimal(0);
-	private Decimal samplingMin = new Decimal(INFINITY);
-	private Decimal samplingMax = new Decimal(-INFINITY);
+	private static Decimal samplingSum = new Decimal(0);
+	private static Decimal samplingSqr = new Decimal(0);
+	private static Decimal samplingMin = new Decimal(INFINITY);
+	private static Decimal samplingMax = new Decimal(-INFINITY);
 	// Statics about the spatial-temporal coverage of the trajectories
-	private Decimal minX = new Decimal(INFINITY);
-	private Decimal minY = new Decimal(INFINITY);
-	private Decimal minT = new Decimal(INFINITY);
-	private Decimal maxX = new Decimal(-INFINITY);
-	private Decimal maxY = new Decimal(-INFINITY);
-	private Decimal maxT = new Decimal(-INFINITY);
-	
-	// Number format of the output statistics
-	private final DecimalFormat df = new DecimalFormat("#.#####");
-		
+	private static Decimal minX = new Decimal(INFINITY);
+	private static Decimal minY = new Decimal(INFINITY);
+	private static Decimal minT = new Decimal(INFINITY);
+	private static Decimal maxX = new Decimal(-INFINITY);
+	private static Decimal maxY = new Decimal(-INFINITY);
+	private static Decimal maxT = new Decimal(-INFINITY);
+
 	/**
 	 * Initialize this service using the default Euclidean 
 	 * distance function.
 	 */
-	public MetadataService() {
-		this.distFunc = new EuclideanDistanceFunction();
+	public static void init() {
+		distFunc = new EuclideanDistanceFunction();
 	}
 	
 	/**
@@ -85,8 +82,8 @@ public final class MetadataService implements SpatialInterface {
 	 * @param distFunc Point distance measure to use to calculate
 	 * the statics about the trajectory data.
 	 */
-	public MetadataService(PointDistanceFunction distFunc) {
-		this.distFunc = distFunc;
+	public static void init(PointDistanceFunction distFunc) {
+		MetadataService.distFunc = distFunc;
 	}
 
 	/**
@@ -108,7 +105,7 @@ public final class MetadataService implements SpatialInterface {
 	 * 
 	 * @throws IllegalArgumentException
 	 */
-	public synchronized void addValues(
+	public static synchronized void addValues(
 			String[] xValues, boolean isDeltaX, String xType,
 			String[] yValues, boolean isDeltaY, String yType,
 			String[] tValues, boolean isDeltaT, String tType) 
@@ -126,40 +123,40 @@ public final class MetadataService implements SpatialInterface {
 					+ "metadata computation must be of same size.");
 		}
 		
-		this.numPts = xValues.length;
+		numPts = xValues.length;
 		// decompress (if not) and parse if possible
 		String[] newValues;
 		if (isDeltaX) {
 			newValues = DeltaEncoder.deltaDecode(xValues);
-			this.xValues = parseToDecimal(newValues);
+			MetadataService.xValues = parseToDecimal(newValues);
 		} else if (Keywords.isNumberType(xType)) {
-			this.xValues = parseToDecimal(xValues);
+			MetadataService.xValues = parseToDecimal(xValues);
 		} else {
-			this.xValues = new Decimal[this.numPts];
-			for (int i=0; i<this.numPts; i++) {
-				this.xValues[i] = new Decimal(0);
+			MetadataService.xValues = new Decimal[numPts];
+			for (int i=0; i<numPts; i++) {
+				MetadataService.xValues[i] = new Decimal(0);
 			}
 		}
 		if (isDeltaY) {
 			newValues = DeltaEncoder.deltaDecode(yValues);
-			this.yValues = parseToDecimal(newValues);
+			MetadataService.yValues = parseToDecimal(newValues);
 		} else if (Keywords.isNumberType(yType)){
-			this.yValues = parseToDecimal(yValues);
+			MetadataService.yValues = parseToDecimal(yValues);
 		} else {
-			this.yValues = new Decimal[this.numPts];
-			for (int i=0; i<this.numPts; i++) {
-				this.yValues[i] = new Decimal(0);
+			MetadataService.yValues = new Decimal[numPts];
+			for (int i=0; i<numPts; i++) {
+				MetadataService.yValues[i] = new Decimal(0);
 			}
 		}
 		if (isDeltaT) {
 			newValues = DeltaEncoder.deltaDecode(tValues);
-			this.tValues = parseToDecimal(newValues);
+			MetadataService.tValues = parseToDecimal(newValues);
 		} else if (Keywords.isNumberType(tType)){
-			this.tValues = parseToDecimal(tValues);
+			MetadataService.tValues = parseToDecimal(tValues);
 		} else {
-			this.tValues = new Decimal[this.numPts];
-			for (int i=0; i<this.numPts; i++) {
-				this.tValues[i] = new Decimal(0);
+			MetadataService.tValues = new Decimal[numPts];
+			for (int i=0; i<numPts; i++) {
+				MetadataService.tValues[i] = new Decimal(0);
 			}
 		}
 		
@@ -183,7 +180,7 @@ public final class MetadataService implements SpatialInterface {
 	 * 
 	 * @throws IllegalArgumentException
 	 */
-	public synchronized void addValues(
+	public static synchronized void addValues(
 			double[] xValues, boolean isDeltaX,
 			double[] yValues, boolean isDeltaY,
 			double[] tValues, boolean isDeltaT) 
@@ -201,26 +198,26 @@ public final class MetadataService implements SpatialInterface {
 					+ "metadata computation must be of same size.");
 		}
 		
-		this.numPts = xValues.length;
+		numPts = xValues.length;
 		// decompress (if not)
 		double[] newValues;
 		if (isDeltaX) {
 			newValues = DeltaEncoder.deltaDecode(xValues);
-			this.xValues = parseToDecimal(newValues);
+			MetadataService.xValues = parseToDecimal(newValues);
 		} else {
-			this.xValues = parseToDecimal(xValues);
+			MetadataService.xValues = parseToDecimal(xValues);
 		}
 		if (isDeltaY) {
 			newValues = DeltaEncoder.deltaDecode(yValues);
-			this.yValues = parseToDecimal(newValues);
+			MetadataService.yValues = parseToDecimal(newValues);
 		} else {
-			this.yValues = parseToDecimal(yValues);
+			MetadataService.yValues = parseToDecimal(yValues);
 		}		
 		if (isDeltaT) {
 			newValues = DeltaEncoder.deltaDecode(tValues);
-			this.tValues = parseToDecimal(newValues);
+			MetadataService.tValues = parseToDecimal(newValues);
 		} else {
-			this.tValues = parseToDecimal(tValues);
+			MetadataService.tValues = parseToDecimal(tValues);
 		}
 
 		// update dataset statistics for this new trajectory
@@ -235,7 +232,7 @@ public final class MetadataService implements SpatialInterface {
 	 * 
 	 * @throws NumberFormatException If the values cannot be parsed to Decimal.
 	 */
-	private Decimal[] parseToDecimal(String[] values) throws NumberFormatException {
+	private static Decimal[] parseToDecimal(String[] values) throws NumberFormatException {
 		int size = values.length;
 		Decimal[] result = new Decimal[size];
 		for (int i=0; i<size; i++) {
@@ -252,7 +249,7 @@ public final class MetadataService implements SpatialInterface {
 	 * 
 	 * @throws NumberFormatException If the values cannot be parsed to Decimal.
 	 */
-	private Decimal[] parseToDecimal(double[] values) throws NumberFormatException {
+	private static Decimal[] parseToDecimal(double[] values) throws NumberFormatException {
 		int size = values.length;
 		Decimal[] result = new Decimal[size];
 		for (int i=0; i<size; i++) {
@@ -264,7 +261,7 @@ public final class MetadataService implements SpatialInterface {
 	 * Update the metadata statistics for every new input trajectory.
 	 * <br> [0]: mean [1]: min [2]: max [3]: std
 	 */
-	private void updateStatistics() {
+	private static void updateStatistics() {
 		// get statistics of this trajectory points
 		// using the provided distance measure
 		double distance;
@@ -328,23 +325,23 @@ public final class MetadataService implements SpatialInterface {
 	/**
 	 * @return Total number of data files processed.
 	 */
-	public long getFilesCount() {
+	public static long getFilesCount() {
 		return filesCount;
 	}
 
 	/**
-	 * @param filesCount Total number of data files
+	 * @param count Total number of data files
 	 *  in the dataset to process.
 	 */
-	public void setFilesCount(long filesCount) {
-		this.filesCount = filesCount;
+	public static void setFilesCount(long count) {
+		filesCount = count;
 	}
 
 	/**
 	 * @return Number of trajectories processed so far 
 	 * from the input dataset.
 	 */
-	public long getTrajectoriesCount(){
+	public static long getTrajectoriesCount(){
 		return trajectoriesCount;
 	}
 	
@@ -352,7 +349,7 @@ public final class MetadataService implements SpatialInterface {
 	 * @return Number of trajectory sample points processed
 	 * so far from the input dataset.
 	 */
-	public long getPointsCount(){
+	public static long getPointsCount(){
 		return pointsCount;
 	}
 
@@ -364,7 +361,7 @@ public final class MetadataService implements SpatialInterface {
 	 * in this dataset. 
 	 * <p> [0]: min [1]: max [2]: mean [3]: std
 	 */
-	public double[] getNumPointsStats() {
+	public static double[] getNumPointsStats() {
 		if (trajectoriesCount == 0) {
 			return new double[4];
 		}
@@ -388,7 +385,7 @@ public final class MetadataService implements SpatialInterface {
 	 * @return Array containing statistics on the trajectories length.
 	 * <p> [0]: min [1]: max [2]: mean [3]: std
 	 */
-	public double[] getLengthStats() {
+	public static double[] getLengthStats() {
 		if (trajectoriesCount == 0) {
 			return new double[4];
 		}
@@ -412,7 +409,7 @@ public final class MetadataService implements SpatialInterface {
 	 * @return Array containing statistics on the trajectories duration.
 	 * <p> [0]: min [1]: max [2]: mean [3]: std
 	 */
-	public double[] getDurationStats() {
+	public static double[] getDurationStats() {
 		if (trajectoriesCount == 0) {
 			return new double[4];
 		}
@@ -436,7 +433,7 @@ public final class MetadataService implements SpatialInterface {
 	 * @return Array containing statistics on the trajectories speed.
 	 * <p> [0]: min [1]: max [2]: mean [3]: std
 	 */
-	public double[] getSpeedStats() {
+	public static double[] getSpeedStats() {
 		if (trajectoriesCount == 0) {
 			return new double[4];
 		}
@@ -461,7 +458,7 @@ public final class MetadataService implements SpatialInterface {
 	 * sampling rate.
 	 * <p> [0]: min [1]: max [2]: mean [3]: std
 	 */
-	public double[] getSamplingRateStats() {
+	public static double[] getSamplingRateStats() {
 		if (trajectoriesCount == 0) {
 			return new double[4];
 		}
@@ -487,7 +484,7 @@ public final class MetadataService implements SpatialInterface {
 	 * <p>	[0]: min X [1]: min Y [2]: min Time 
 	 * 	    [3]: max X [4]: max Y [5]: max Time
 	 */
-	public double[] getCoverageStats() {
+	public static double[] getCoverageStats() {
 		if (trajectoriesCount == 0) {
 			return new double[6];
 		}
@@ -504,7 +501,7 @@ public final class MetadataService implements SpatialInterface {
 	 * @return A String text with the statistics about 
 	 * data collected so far in this dataset.
 	 */
-	public String getMetadata() {
+	public static String getMetadata() {
      	String script = "";
 		if (trajectoriesCount == 0) {
 			return script;
@@ -518,9 +515,12 @@ public final class MetadataService implements SpatialInterface {
      	double[] avgSpeed = getSpeedStats();
      	double[] avgRate  = getSamplingRateStats();
      	double[] cover  = getCoverageStats();
+
+     	// Format of the numbers in the output statistics
+     	final DecimalFormat df = new DecimalFormat("#.#####");
+     	df.setRoundingMode(RoundingMode.HALF_EVEN);
      	
      	// create metadata script
-     	df.setRoundingMode(RoundingMode.HALF_EVEN);
      	script += "NUM_TRAJECTORIES\t" + numTraj + "\n";
      	script += "NUM_POINTS\t" 	   + numPts  + "\n";
      	

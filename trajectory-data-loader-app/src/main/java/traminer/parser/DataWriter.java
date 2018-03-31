@@ -1,14 +1,17 @@
 package traminer.parser;
 
 import java.io.IOException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang.NullArgumentException;
 import org.apache.log4j.Logger;
 import org.bson.Document;
 
+import traminer.io.HDFSService;
 import traminer.io.IOService;
 import traminer.io.db.MongoDBService;
+import traminer.io.params.HDFSParameters;
 import traminer.io.params.LocalFSParameters;
 import traminer.io.params.MongoDBParameters;
 import traminer.parser.analyzer.Keywords;
@@ -25,17 +28,22 @@ import traminer.parser.format.Format.AttributeEntry;
  * 
  * @see TrajectoryParser
  * 
- * @author uqdalves
+ * @author douglasapeixoto
  */
 @SuppressWarnings("serial")
 public class DataWriter implements ParserInterface {
 	// output database
 	private static OutputDatabase outputDb;
+	
 	// Local data service and parameters
 	private static LocalFSParameters localParams = null;
+	
 	// MongoDB service and parameters
 	private static MongoDBService mongodb = null;
-	private static MongoDBParameters mongodbParams = null;
+	
+	// HHFS service and parameters
+	private static HDFSService hdfs;
+	private static HDFSParameters hdfsParams;
 	
 	// System log
 	private static Logger log = Logger.getLogger(DataWriter.class);
@@ -64,15 +72,32 @@ public class DataWriter implements ParserInterface {
 			throw new NullArgumentException(
 					"MongoDB parameters must not be null.");
 		}
-		mongodbParams = params;
-		mongodbParams.addCollectionName("data", DATA_COLL_NAME);
-		mongodbParams.addCollectionName("meta", META_COLL_NAME);
+		params.addCollectionName("data", DATA_COLL_NAME);
+		params.addCollectionName("meta", META_COLL_NAME);
 		try {
-			mongodb = new MongoDBService(mongodbParams);
+			mongodb = new MongoDBService(params);
 		} catch (IOException e) {
 			log.error("Unable to initialize MongoDB service.", e);
 		}
 		outputDb = OutputDatabase.MONGODB;
+	}
+	
+	/**
+	 * Initialize this data writer service with Local data storage.
+	 * 
+	 * @param params Local data storage location and parameters.
+	 */
+	public static void init(HDFSParameters params) {
+		if (params == null) {
+			throw new NullArgumentException(
+					"HDFS parameters must not be null.");
+		}		
+		try {
+			hdfs = new HDFSService(params);
+		} catch (Exception e) {
+			log.error("Unable to initialize HDFS service.", e);
+		}
+		outputDb = OutputDatabase.HDFS;
 	}
 	
 	/**
@@ -87,9 +112,13 @@ public class DataWriter implements ParserInterface {
 
 		// save the parsed file to local folder	
 		if (outputDb.equals(OutputDatabase.LOCAL)) {
-			String outDir = localParams.getLocalDataPath().toString();
-			IOService.writeFile(parsedFile, outDir, fileName);
-		}
+			final String outDir = localParams.getLocalDataPath().toString();
+			try {
+				IOService.writeFile(parsedFile, outDir, fileName);
+			} catch (IOException e) {
+				log.error("Error saving data file '" +fileName+ "'.", e);
+			} 
+		}		
 		// save the parsed file to MongoDB
 		else if (outputDb.equals(OutputDatabase.MONGODB)) {
 			parsedFile.forEach(line -> {
@@ -101,18 +130,20 @@ public class DataWriter implements ParserInterface {
 							.append("_id",  _id)
 							.append("_coordinates", _coords)
 							.append("record", line);
-							// TODO add semantic attrs separately
+					// TODO add semantic attrs separately
 					mongodb.insertDocument(mongoDoc, DATA_COLL_NAME);
 				}
 			});
 		}
-		// save the parsed file to HBASE folder	
-		else if (outputDb.equals(OutputDatabase.HBASE)) {
-			//TODO HBase
-		}
-		// save file to VoltDB
-		else if (outputDb.equals(OutputDatabase.VOLTDB)) {
-			//TODO VoltDB
+		// save the parsed file to HDFS folder	
+		else if (outputDb.equals(OutputDatabase.HDFS)) {
+			final String outDir = hdfsParams.getRootDir();
+			try {
+				hdfs.writeFile(parsedFile.sequential().collect(Collectors.toList()), 
+						outDir, fileName);
+			} catch (Exception e) {
+				log.error("Error saving data file '" +fileName+ "' to HDFS.", e);
+			}
 		}
 	}
 
@@ -203,24 +234,8 @@ public class DataWriter implements ParserInterface {
 			// create the script of the output format file
 			final String script = commandFormat + idFormat + coordFormat + otherAttrFormat;
 			
-			// save file to local folder	
-			if (outputDb.equals(OutputDatabase.LOCAL)) {
-				String outDir = localParams.getLocalDataPath().toString();
-				IOService.writeFile(script, outDir, "output-format.tddf");
-			}		
-			// save file to MongoDB
-			else if (outputDb.equals(OutputDatabase.MONGODB)) {
-				mongodb.insertDocument(new Document("_id", "output-format")
-							.append("value", script), META_COLL_NAME);
-			}
-			// save file to HBASE
-			else if (outputDb.equals(OutputDatabase.HBASE)) {
-				//TODO HBase
-			}
-			// save file to VoltDB
-			else if (outputDb.equals(OutputDatabase.VOLTDB)) {
-				//TODO VoltDB
-			}
+			// create the file in the database
+			saveOutputFormatFile(script);
 			
 			return script;
 		} catch (Exception e) {			
@@ -229,6 +244,42 @@ public class DataWriter implements ParserInterface {
 	}
 
 	/**
+	 * Save the OutputFormatFile. File containing the 
+	 * specifications of the intermediate data format. 
+	 * 
+	 * <br> Save file as 'output-format.tddf'.
+	 * 
+	 * @param outputDataFormat The script containing the 
+	 * Output Data format.
+	 * 
+	 * @throws ParserException If the file could not be successfully
+	 * created or saved.
+	 */
+	public static void saveOutputFormatFile(
+			String outputDataFormat) throws ParserException {
+		final String fileName = "output-format.tddf";
+		try {
+			// save file to local folder	
+			if (outputDb.equals(OutputDatabase.LOCAL)) {
+				final String outDir = localParams.getLocalDataPath().toString();
+				IOService.writeFile(outputDataFormat, outDir, fileName);
+			}		
+			// save file to MongoDB
+			else if (outputDb.equals(OutputDatabase.MONGODB)) {
+				mongodb.insertDocument(new Document("_id", "output-format")
+					   .append("value", outputDataFormat), META_COLL_NAME);
+			}
+			// save file to HDFS
+			else if (outputDb.equals(OutputDatabase.HDFS)) {
+				final String outDir = hdfsParams.getRootDir();
+				hdfs.writeFile(outputDataFormat, outDir, fileName);
+			}
+		} catch (Exception e) {			
+			throw new ParserException("Unable to generate and save 'Output Data Format' file.", e);
+		}
+	}
+	
+	/**
 	 * Generate and save the metadata file, containing informations and
 	 * statistics about the output dataset. 
 	 * 
@@ -236,16 +287,14 @@ public class DataWriter implements ParserInterface {
 	 * 
 	 * @param dataFormat User-defined Input data format specifications.
 	 * @param outFormat  User-defined Output data format.
-	 * @param metadata   Metadata generated during the data parsing.
 	 * 
-	 * @return True if the file has been successfully created and saved,
-	 * false otherwise.
+	 * @return The metadata script.
 	 * 
 	 * @throws ParserException If the file could not be successfully
 	 * created or saved.
 	 */
 	public static String saveMetadataFile(DataFormat dataFormat, 
-			OutputFormat outFormat, MetadataService metadata) throws ParserException {
+			OutputFormat outFormat) throws ParserException {
 		try {
 			// number of trajectory attributes in the output data
 			int attrCount;
@@ -264,34 +313,51 @@ public class DataWriter implements ParserInterface {
 			}
 			
 			String script = "";
-			script += "NUM_FILES\t" + metadata.getFilesCount() + "\n";		
+			script += "NUM_FILES\t" + MetadataService.getFilesCount() + "\n";		
 			script += "NUM_ATTRIBUTES\t" + attrCount + "\n";
 			script += "NUM_COORD_ATTRIBUTES\t" + coordAttrCount + "\n";
-			script += metadata.getMetadata();
+			script += MetadataService.getMetadata();
 			
-			// save file to local folder	
-			if (outputDb.equals(OutputDatabase.LOCAL)) {
-				String outDir = localParams.getLocalDataPath().toString();
-				IOService.writeFile(script, outDir, "metadata.meta");
-			}
-			// save file to MongoDB
-			else if (outputDb.equals(OutputDatabase.MONGODB)) {
-				mongodb.insertDocument(new Document("_id", "metadata")
-						.append("value", script), META_COLL_NAME);
-			}
-			// save file to HBASE
-			else if (outputDb.equals(OutputDatabase.HBASE)) {
-				//TODO HBase
-			}
-			// save file to VoltDB
-			else if (outputDb.equals(OutputDatabase.VOLTDB)) {
-				//TODO VoltDB
-			}
-
+			// create the file in the database
+			saveMetadataFile(script);
+			
 			return script;
 		} catch (Exception e) {
 			throw new ParserException("Unable to generate and save 'Metadata' file.", e);
 		}
 	}
 	
+	/**
+	 * Save the metadata file, containing informations and
+	 * statistics about the output dataset. 
+	 * 
+	 * <br> Save file as 'metadata.meta'.
+	 * 
+	 * @param metadata Content of the metadata file.
+	 *  
+	 * @throws ParserException If the file could not be successfully
+	 * created or saved.
+	 */
+	public static void saveMetadataFile(String metadata) throws ParserException {
+		final String fileName = "metadata.meta";
+		try {
+			// save file to local folder	
+			if (outputDb.equals(OutputDatabase.LOCAL)) {
+				String outDir = localParams.getLocalDataPath().toString();
+				IOService.writeFile(metadata, outDir, fileName);
+			}
+			// save file to MongoDB
+			else if (outputDb.equals(OutputDatabase.MONGODB)) {
+				mongodb.insertDocument(new Document("_id", "metadata")
+						.append("value", metadata), META_COLL_NAME);
+			}
+			// save file to HDFS
+			else if (outputDb.equals(OutputDatabase.HDFS)) {
+				final String outDir = hdfsParams.getRootDir();
+				hdfs.writeFile(metadata, outDir, fileName);
+			}
+		} catch (Exception e) {
+			throw new ParserException("Unable to generate and save 'Metadata' file.", e);
+		}
+	}
 }

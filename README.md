@@ -1,6 +1,6 @@
 # Trajectory Data Loader
 ----------
-A system for trajectory data loading, representation, and integration, with support for trajectory data compression (i.e. lossless Delta compression). Provides templates for representation of different input trajectory datasets, for data integration and storage.  Currently application provides four different storage options, i.e. Local directory, MongoDB, HBase (Distributed storage), and VoltDB (in-memory storage).
+A system for trajectory data loading, representation, and integration, with support for trajectory data compression (i.e. lossless Delta compression), and synthetic data generation. Provides templates for representation of different input trajectory datasets, for data integration and storage.  Currently application provides three different storage options, i.e. Local directory, MongoDB, HDFS (Distributed file system).
 
 This application also generates statistical information (Metadata) about the input dataset. This application  was built using Java 8, and also provides a platform independent GUI (based on JavaFX) for easy trajectory data loading and parsing.
 
@@ -10,7 +10,7 @@ This application also generates statistical information (Metadata) about the inp
 
 * **Load** trajectory data in any textual format.
 * **Parse** the raw data based on a **Trajectory Data Description Format (TDDF)** to one of the system-provided **Output Formats** (i.e. SPATIAL, SPATIAL-TEMPORAL, ALL).
-* **Store** the parsed data to a database of choice (e.g. MongoDB, Local directory, HBase, VoltDB). 
+* **Store** the parsed data to a database of choice (e.g. MongoDB, Local directory, HDFS). 
 
 
 # User and Installation Guide
@@ -32,13 +32,12 @@ The following image shows the data loader GUI window.
 	    * **Optional:** You can start the MongoDB server from within the data loader GUI, you first need to setup the `MONGO_HOME` path in your OS environment variables to the binary folder of MongoDB installation, ex: `/path-to-mongodb/Server/3.x/bin`, then click in **Start MongoDB** in the database configuration tab in the application GUI.
     * **Trajectory Collections:** The application will store the parsed data, the *Ouput TDDF*, and the *Metadata* into the default MongoDB collections: `"trajectorydata"` and `"metadata"`.
     
--   (2) **LOCAL**: which stores the parsed data into a user-specified directory as `.csv` files, as well as the the *Ouput Data Format* as `output-format.tddf`, and the *Metadata* as `metadata.meta`. Local storage currently is only available for trajectory data.
+-   (2) **LOCAL**: which stores the parsed data into a user-specified directory as `.csv` files, as well as the the *Ouput Data Format* as `output_format.conf`, and the *Metadata* as `metadata.meta`. Local storage currently is only available for trajectory data.
 
--	(3) **HBASE** distributed data storage: 
+-	(3) **HDFS**:  stores the parsed data as `.csv` files  in the HDFS distributed file system , as well as the the *Ouput Data Format* as `output_format.conf`, and the *Metadata* as `metadata.meta`. 
+	* To use HDFS, [donwload][hadoop-download] the latest version of Hadoop for your OS, then [install][hadoop-install] and start the HDFS service. The GUI is already set to use the default HDFS server parameters, however, the user is free to provide their own server access parameters (i.e. host address, and output directory).
 
--	(4) **VOLTDB** in-memory storage:
-
-
+	
 # Trajectory Data Loading and Parsing
 ----------
 This application reads raw trajectory files in any textual format. However, different datasets provide different data formats, thus one must specify the fields/attributes in the source data format, this configuration is done through the input **Trajectory Data Description Format (TDDF)**, provided by the user.
@@ -99,9 +98,9 @@ A user specified script containing the format of the input data. The  script con
 
 For each *attribute* of the data record, one must provide the attributes' ``NAME``, ``TYPE`` and ``DELIMITER``, separated by space or tab. 
 
-    NAME:		Name of the field/attribute
-    TYPE:		Type of the field/attribute to read
-    DELIMITER:		Field delimiter (character)
+    NAME:			Name of the field/attribute
+	TYPE*:			Type of the field/attribute to read
+	DELIMITER:		Field delimiter (character)
 
 When providing the *TDDF* script, the user must declare one attribute per line in the exact order they appear in the input file. The parser will read the attributes' value until the given field ``DELIMITER`` is reached. Attributes' name must be unique in the TDDF. Commands are declared in the form ``NAME``, and ``VALUE``.
 
@@ -110,20 +109,18 @@ When providing the *TDDF* script, the user must declare one attribute per line i
 
 **_ID, _AUTO_ID:** The attribute keyword `_ID` describes the identifier field of each trajectory record. Since in our research not all input datasets provide an ID for the trajectory records, the command `_AUTO_ID` to generate the records' IDs automatically. An example of the `_AUTO_ID` command syntax is given as follows:
 
-```
-_AUTO_ID		prefix
-# Output the ID attribute as STRING: 
-# prefix_1, prefix_2, ...
-
-_AUTO_ID		10
-# Outputs the ID as attribute INTEGER, 
-# starting from the given number: 
-# 10, 11, 12, ...
-```
+    _AUTO_ID		prefix
+    # Output the ID attribute as STRING: 
+    # prefix_1, prefix_2, ...
+	
+	_AUTO_ID		10
+	# Outputs the ID as attribute INTEGER, 
+	# starting from the given number: 
+	# 10, 11, 12, ...
 
 Either the trajectory `_ID` attribute field, or `_AUTO_ID`, should be provided in the input *TDDF*. If both are omitted, the application will use `_AUTO_ID 	1` by default.	
 
-**_COORDINATES, _X, _Y, _LON, _LAT, _TIME:**	The attribute keyword `_COORDINATES` is a mandatory field, and describes the list of coordinate points of the trajectory records. The  `_COORDINATES` must be declared as an `ARRAY` type, followed by the description of the spatial-temporal attributes -- i.e. `_X, _Y,  _TIME` in  `CARTESIAN` system, or `_LON, _LAT, _TIME`  in `GEOGRAPHIC` system -- and any semantic attributes of the coordinate points, in the same order they appear in the input data files. The spatial-temporal fields `_X, _Y, _TIME`, or  `_LON, _LAT, _TIME`, in a `_COORDINATES` attribute declaration are **mandatory**. 
+**_COORDINATES, _X, _Y, _TIME:**	The attribute keyword `_COORDINATES` is a mandatory field, and describes the list of coordinate points of the trajectory records. The  `_COORDINATES` must be declared as an `ARRAY` type, followed by the description of the spatial-temporal attributes -- i.e. `_X, _Y,  _TIME` in  `CARTESIAN` system, or `_LON, _LON, _TIME`  in `GEOGRAPHIC` system -- and any semantic attributes of the coordinate points, in the same order they appear in the input data files. The spatial-temporal fields `_X, _Y, _TIME`, or  `_LON, _LAT, _TIME`, in a `_COORDINATES` attribute declaration are **mandatory**. 
 
 **_RECORDS_DELIM:** The command `_RECORDS_DELIM` tells the parser the final of a data record. In most GPS trajectory datasets in our research, data records are organised by either one trajectory record per file line, that is `_RECORDS_DELIM LN`, one trajectory record per file, that is `_RECORDS_DELIM EOF`, or many records per file separated by a delimiter character or word `c` , that is `_RECORDS_DELIM c`. The parser will read a data record until the given delimiter is found.
 
@@ -133,9 +130,9 @@ Either the trajectory `_ID` attribute field, or `_AUTO_ID`, should be provided i
 
 **_IGNORE_ATTR:**	The command `_IGNORE_ATTR`, on the other hand, ignores the attribute in the position of its declaration in all data records, and it is followed by the attributer's delimiter. Both `_IGNORE_LINES` and `_IGNORE_ATTR` commands are useful, for instance, when not all data records, file lines, or attributes from the input dataset are necessary for the user application.
 	
-**_DECIMAL_PREC:**  The command `_DECIMAL_PREC` tells the parser the number of decimal points `d` to consider in decimal values, the default value is `d=5`. Attributes declared as `DECIMAL` will be converted to a integer number in the format `value * 10 ^ d`, and compressed using a lossless delta-compression to reduce storage space.
+**_DECIMAL_PREC:**  The command `_DECIMAL_PREC` tells the parser the number of decimal points $d$ to consider in decimal values, the default value is $d=5$. Attributes declared as `DECIMAL` will be converted to a integer number in the format $value * 10 ^ d$, and compressed using a lossless delta-compression to reduce storage space.
 
-**_SAMPLE:**  The command `_SAMPLE` tells the data loader to randomly select a sample the input dataset for reading and parsing. The value for sampling must be in the range `]0.0, 1.0]` which specifies the percentage of data records to read. The `_SAMPLE` command is particularly useful for large datasets and debugging purposes. 
+**_SAMPLE:**  The command `_SAMPLE` tells the data loader to randomly select a sample the input dataset for reading and parsing. The value for sampling must be in the range $]0.0, 1.0]$ which specifies the percentage of data records to read. The `_SAMPLE` command is particularly useful for large datasets and debugging purposes. 
 
 **DATETIME:** `DATETIME` values are declared and parsed using [Java DateTimeFormatter][java-datetime]. `DATETIME` types must be declared as `DATETIME["pattern"]`, where ``pattern`` describes the attribute using the DateTimeFormatter format.
 
@@ -144,42 +141,40 @@ Either the trajectory `_ID` attribute field, or `_AUTO_ID`, should be provided i
 
 Arrays (or lists) types are declared by specifying the attributes in the array, i.e. attributes' `NAME`, `TYPE` and `DELIMITER`, the general syntax Array declaration is:
 
-```
-ARRAY ( NAME   TYPE   DELIMITER  ... )
-```
+    ARRAY ( NAME   TYPE   DELIMITER  ... )
 
 Arrays can be single-valued or multi-valued (e.g. objects) of any of the pre-defined data types, the parser will read the parameters until the given field delimiter is reached. Attributes in the array are specified in the exact order they appear in the source file, similar to any other attribute declaration. Following are some examples of  array type declaration for  `_COORDINATES` field.
 
 **Example 1:**  A simple Array of String objects, separated by line-space `LS`
     
 ```
-ARRAY ( varName  STRING  LS )
+    ARRAY ( varName  STRING  LS )
 ```
 
 **Example 2:** Trajectory coordinates as an array/list of spatial-temporal points, comma separated.
 
 ```
-ARRAY ( _X     DECIMAL  , 
-	_Y     DECIMAL  , 
-	_TIME  INTEGER  , )
+	ARRAY ( _X     DECIMAL  , 
+	        _Y     DECIMAL  , 
+	        _TIME  INTEGER  , )
 ``` 
 
 **Example 3:** Trajectory coordinates as an array/list of spatial-temporal points, with `weight` and `ptType` attributes, one coordinate per file line, separated by semicolon.
 
 ```
-ARRAY ( _X      DECIMAL	 ;
-	_Y	DECIMAL	 ;
-	_TIME   INTEGER	 ;
-	weight  DECIMAL	 ;
-	ptType  STRING	 LN )
+	ARRAY ( _X      DECIMAL	 ;
+		    _Y	    DECIMAL	 ;
+	        _TIME   INTEGER	 ;
+	        weight  DECIMAL	 ;
+	        ptType  STRING	 LN )
 ```
 
 **Example 4:**   Array of spatial-temporal points, comma separated, `_X` and `_Y` attributes delta-compressed.
 
 ```
-ARRAY ( _X     DELTADECIMAL  ,
-	_Y     DELTADECIMAL  ,
-	_TIME  INTEGER       ,  )
+	ARRAY ( _X     DELTADECIMAL  ,
+		    _Y     DELTADECIMAL  ,
+		    _TIME  INTEGER       ,  )
 ```
 
 
@@ -188,7 +183,7 @@ ARRAY ( _X     DELTADECIMAL  ,
 
 After the input data is parsed, the data in the new format is stored into any of our primary storage platforms, in the output format of choice, along with the output *TDDF*  and a *Metadata* file, containing information and statistics about the input trajectory dataset, such as *number of records*, statics about the *speed, length, duration, sampling rate*, and *coverage* of the trajectory records. The system generated output *TDDF* file, on the other hand, contains the specifications of the output data, that is, the  `NAME` and `TYPE` of all attributes in the output data.
 
-We provide three different output formats in our application, namely  `ALL, SPATIAL, SPATIAL-TEMPORAL`. All output data formats follow a *CSV* (comma separated values) style, or *BSON* format in MongoDB. Attribute values are separated by semicolon, and array items are separated by comma. The output files contain one trajectory record per file line. Furthermore, to reduce storage consumption, the spatial-temporal attributes in the list of coordinates are delta-compressed. The records’ attributes are always in the order:
+ e provide three different output formats in our application, namely  `ALL, SPATIAL, SPATIAL-TEMPORAL`. All output data formats follow a *CSV* (comma separated values) style. Attribute values are separated by semicolon, and array items are separated by comma. The output files contain one trajectory record per file line. Furthermore, to reduce storage consumption, the spatial-temporal attributes in the list of coordinates are delta-compressed. The records’ attributes are always in the order:
 
     _ID;_COORDINATES;_OTHER_ATTRIBUTES
 
@@ -207,10 +202,10 @@ Following we describe the system provided output data formats.
 ```
     _OUTPUT_FORMAT	SPATIAL
     _COORD_SYSTEM	CARTESIAN
-    _DECIMAL_PREC   	5
-    _ID	            	STRING
+    _DECIMAL_PREC   5
+    _ID	            STRING
     _COORDINATES	ARRAY(_X     DECIMAL
-			      _Y     DECIMAL)
+						  _Y     DECIMAL)
 ```
 
 **SPATIAL-TEMPORAL:** In this output format, records contain the trajectory `_ID` and the list of spatial-temporal attributes of the `_COORDINATES` only. This output format contains the most basic information of trajectories, commonly used in spatial-temporal queries and mining applications.
@@ -226,11 +221,11 @@ Following we describe the system provided output data formats.
 ```
     _OUTPUT_FORMAT	SPATIAL_TEMPORAL
     _COORD_SYSTEM	CARTESIAN
-    _DECIMAL_PREC       5
-    _ID	                STRING
+    _DECIMAL_PREC   5
+    _ID	            STRING
     _COORDINATES	ARRAY(_X     DECIMAL
-			      _Y     DECIMAL
-			      _TIME  INTEGER)
+						  _Y     DECIMAL
+						  _TIME  INTEGER)
 ```
 
 **ALL:** In this output format, records contain the complete set of attributes specified in the input *TDDF*, that is, the trajectory `_ID` , the list of trajectory `_COORDINATES`points (with all provides coordinate attributes), and the list of semantic attributes of the trajectory. This is the default output format.
@@ -246,15 +241,15 @@ Following we describe the system provided output data formats.
 ```
     _OUTPUT_FORMAT	ALL
     _COORD_SYSTEM	CARTESIAN
-    _DECIMAL_PREC   	5
-    _ID	           	STRING
+    _DECIMAL_PREC   5
+    _ID	            STRING
     _COORDINATES	ARRAY(_X     DECIMAL
-			      _Y     DECIMAL
-			      _TIME  INTEGER)
-    s1	            	STRING
-    s2	            	INTEGER
+						  _Y     DECIMAL
+						  _TIME  INTEGER)
+    s1	            STRING
+    s2	            INTEGER
         ...	
-    sK	            	DECIMAL
+    sK	            DECIMAL
 ```
 
 
@@ -267,7 +262,7 @@ Following we describe the system provided output data formats.
 
     40.008304,116.319876,0,492,39745.0902662037,2008-10-24,02:09:59
     40.008413,116.319962,0,491,39745.0903240741,2008-10-24,02:10:04
-    	. . .
+    			. . .
 		
 **Input TDDF Script 1**
 
@@ -288,12 +283,12 @@ _AUTO_ID            db1_t
 # Field 5: Number of days since 12/30/1899, with fractional part.
 # Field 6: Date as a string.
 # Field 7: Time as a string.
-_COORDINATES     ARRAY( _LAT      DECIMAL   ,
-			_LON      DECIMAL   ,
-			zeroVal   INTEGER   ,
-			alt       INTEGER   ,
-			timeFrac  DECIMAL   ,
-			_TIME     DATETIME["yyyy-MM-dd,HH:mm:ss"] LN)  EOF
+_COORDINATES     ARRAY ( _LAT      DECIMAL   ,
+					     _LON      DECIMAL   ,
+					     zeroVal   INTEGER   ,
+					     alt       INTEGER   ,
+					     timeFrac  DECIMAL 	 ,
+					     _TIME     DATETIME["yyyy-MM-dd,HH:mm:ss"] LN)  EOF
 ``` 
 
 ***
@@ -301,32 +296,32 @@ _COORDINATES     ARRAY( _LAT      DECIMAL   ,
 
 **Input Trajectory Data 2**
 
-	#,1,3/2/2009 9:23:12 AM,3/2/2009 10:02:17 AM,10.4217737338017 km
-	3/2/2009 9:23:12 AM,39.929961,116.355872,23570
-	3/2/2009 9:23:42 AM,39.926785,116.356007,23526
-	. . .
-	#,2,3/2/2009 10:04:14 AM,3/2/2009 10:56:23 AM,13.1721183785493 km
-	3/2/2009 10:04:14 AM,39.969738,116.288209,32482
-	3/2/2009 10:04:44 AM,39.973138,116.288661,13208
-	. . .
+		#,1,3/2/2009 9:23:12 AM,3/2/2009 10:02:17 AM,10.4217737338017 km
+		3/2/2009 9:23:12 AM,39.929961,116.355872,23570
+		3/2/2009 9:23:42 AM,39.926785,116.356007,23526
+		. . .
+		#,2,3/2/2009 10:04:14 AM,3/2/2009 10:56:23 AM,13.1721183785493 km
+		3/2/2009 10:04:14 AM,39.969738,116.288209,32482
+		3/2/2009 10:04:44 AM,39.973138,116.288661,13208
+		. . .
 
 **Input TDDF Script 2**
 
 ```
-_RECORDS_DELIM      	#
+_RECORDS_DELIM      #
 _COORD\_SYSTEM		GEOGRAPHIC
 # Creates new IDs with prefix 'db2_t'
-_AUTO_ID	    	db2_t
+_AUTO_ID			db2_t
 # Ignore the first empty attribute, and the integer ID
 _IGNORE_ATTR		,
 _IGNORE_ATTR		,
-timeIni			STRING	  ,
-timeEnd			STRING	  ,
-length			STRING	  LN
-_COORDINATES		ARRAY( _TIME    DATETIME["M/d/yyyy HH:mm:ss a"]    ,
-                               _LAT	DECIMAL	  ,
-			       _LON	DECIMAL	  ,
-			       alt	INTEGER	  LN )    #
+timeIni				STRING	  ,
+timeEnd				STRING	  ,
+length				STRING	  LN
+_COORDINATES		ARRAY ( _TIME   DATETIME["M/d/yyyy HH:mm:ss a"]		,
+                            _LAT	DECIMAL	  ,
+							_LON	DECIMAL	  ,
+							alt		INTEGER	  LN )    #
 ```
 
 ***
@@ -335,35 +330,35 @@ _COORDINATES		ARRAY( _TIME    DATETIME["M/d/yyyy HH:mm:ss a"]    ,
 **Input Trajectory Data 3**
 
 	1018_1450,1018,1,27|27|27|19,3639865:0:57:114.33708:30.50130:1427933750|3639862:6:59:114.33715:30.50128:1427933759	
-		
+
 **Input TDDF Script 3**
 
 ```
 _RECORDS_DELIM		LN
 _COORD_SYSTEM		GEOGRAPHIC
-_ID			STRING		,
+_ID					STRING		,
 # The moving object which generated this trajectory
-sourceId		INTEGER	 	,
+sourceId			INTEGER	 	,
 # Car type: personal car=1, taxis=2, others=0
-carType			INTEGER	 	,
+carType				INTEGER	 	,
 citySequence		ARRAY ( cityId     INTEGER    | )	,
 # Information of each mapped points to each link, including linkID,
 # the distance between each mapped point, the distance of mapping, longitude, latitude, time
-_COORDINATES		ARRAY( linkID	    INTEGER   :
-	                       oDistance   INTEGER   :
- 		               mDistance   INTEGER   :
-				_LON	    DECIMA    :
-				_LAT	    DECIMAL   :
-				_TIME	    INTEGER   | )  LN
+_COORDINATES		ARRAY ( linkID	    INTEGER	    :
+	                        oDistance   INTEGER	    :
+ 		                    mDistance	INTEGER     :
+							_LON		DECIMAL		:
+							_LAT		DECIMAL		:
+							_TIME		INTEGER		| )  LN
 ```
 
 **Output Format:** Notice that if in all three previous cases the input datasets have been parsed to the same  output format, say `_SPATIAL_TEMPORAL`, the output TDDF will be the following:
 
 ```
-_OUTPUT_FORMAT	  SPATIAL_TEMPORAL
-_COORD_SYSTEM	  GEOGRAPHIC
+_OUTPUT_FORMAT    SPATIAL_TEMPORAL
+_COORD_SYSTEM     GEOGRAPHIC
 _DECIMAL_PREC	  5
-_ID		  STRING
+_ID				  STRING
 _COORDINATES	  ARRAY(_LON DECIMAL _LAT DECIMAL _TIME INTEGER)
 ```
 
@@ -408,11 +403,11 @@ db2_t_2;11628820,3996973,1235988254000,46,340,30000
 _RECORDS_DELIM	  LN
 _COORD_SYSTEM     CARTESIAN
 _ID               STRING     LS
-_COORDINATES	  ARRAY( _TIME  INTEGER  LS
-			 _X     DECIMAL  LS 
-			 _Y     DECIMAL  LS )  |
-type		  STRING     |
-districts	  ARRAY( name STRING : ) LN
+_COORDINATES	  ARRAY ( _TIME  INTEGER  LS
+					      _X     DECIMAL  LS 
+					      _Y     DECIMAL  LS )  |
+type			  STRING     |
+districts		  ARRAY ( name STRING : ) LN
 ```
 
 ***
@@ -421,23 +416,23 @@ districts	  ARRAY( name STRING : ) LN
 **Input Trajectory Data 5**
 
 	T_1111|0,0.2,0.1,0.0,road,N,1,1.1,1.2,0.0,road,N,3,2.1,2.2,0.0,crossing,N|pedestrian
-        T_2222|0,7.2,7.1,0.0,road,W,1,5.1,5.2,0.0,road,N|vehicle
+    T_2222|0,7.2,7.1,0.0,road,W,1,5.1,5.2,0.0,road,N|vehicle
 	T_3333|1,7,8,0.0,crossing,S,2,1,2,2,road,S,3,5,8,0.0,crossing,E|vehicle
 	T_4444|5,7,8,0.0,road,E,6,4,5,6,crossing,S,7,1,2,0.0,road,S|bike
 	T_5555|3,1.0,2.0,0.0,crossing,N,6,4.2,5.2,0.0,road,E,9,7.5,8.5,0.0,road,W|pedestrian
 
 **Input TDDF Script 5**
 ```
-_RECORDS_DELIM	  LN
-_COORD_SYSTEM     CARTESIAN
-_ID		  STRING    |
-_COORDINATES	  ARRAY( _TIME  INTEGER  , 
-			 _X     DECIMAL  , 
-			 _Y     DECIMAL  , 
-			 _Z     DECIMAL  , 
-			 type   STRING   , 
-			 direction  CHAR , )	 |
-type	          STRING	   LN
+_RECORDS_DELIM	LN
+_COORD_SYSTEM   CARTESIAN
+_ID				STRING    |
+_COORDINATES	ARRAY ( _TIME  INTEGER  , 
+					    _X     DECIMAL  , 
+					    _Y     DECIMAL  , 
+					    _Z     DECIMAL  , 
+					    type   STRING   , 
+					    direction  CHAR , )	 |
+type			STRING	 LN
 ```
 
 ***
@@ -459,10 +454,10 @@ _RECORDS_DELIM	LN
 _COORD_SYSTEM   CARTESIAN
 _ID             STRING       |
 # (x,y,t) coordinates in delta compression
-_COORDINATES	ARRAY( _X     DELTADECIMAL  , 
-		       _Y     DELTADECIMAL  , 
-		       _TIME  DELTADECIMAL  , 
-		       direction      CHAR  , )  LN
+_COORDINATES	ARRAY ( _X     DELTADECIMAL  , 
+					    _Y     DELTADECIMAL  , 
+					    _TIME  DELTADECIMAL  , 
+					    direction      CHAR  , )  LN
 
 ```
 **Note:** The parser always outputs the coordinate's spatial-temporal attributes in delta-compression. If the data is already delta-compressed it will be decompressed during the parsing in order to compute the Metadata.  However, the parser will output the data as it is in the original files.
@@ -578,28 +573,28 @@ import traminer.io.params.LocalFSParameters;
 import traminer.parser.TrajectoryParser;
 import traminer.parser.analyzer.Keywords.OutputFormat;
 . . .
-/** Load and parse trajectory data to Local directory */
-public void loadParseTrajectoryData() {
-	String inputDataPath   = "/path/to/trajectory-data-folder";
-	String dataFormatPath  = "/path/to/input-data-format.txt";
+	/** Load and parse trajectory data to Local directory */
+    public void loadParseTrajectoryData() {
+	    String inputDataPath   = "/path/to/trajectory-data-folder";
+		String dataFormatPath  = "/path/to/input-data-format.txt";
+		
+		/* setup output directory */
+		String outputDataPath  = "/path/to/output-data-folder";
+		LocalDBParameters params =
+				new LocalDBParameters(outputDataPath)
 
-	/* setup output directory */
-	String outputDataPath  = "/path/to/output-data-folder";
-	LocalDBParameters params =
-		new LocalDBParameters(outputDataPath)
-
-	/* output data formats: ALL, SPATIAL, SPATIAL-TEMPORAL */
-	OutputFormat outputFormat = OutputFormat.ALL;
-
-	/* read input data format file */
-	List<String> inputDataFormat = 
-		new IOService().readFile(dataFormatPath);
-
-	/* run parser and save data to local directory */
-	TrajectoryParser parser = 
-		new TrajectoryParser(inputDataPath, inputDataFormat);
-	parser.parseToLocal(outputFormat, params);
-}
+		/* output data formats: ALL, SPATIAL, SPATIAL-TEMPORAL */
+		OutputFormat outputFormat = OutputFormat.ALL;
+		 
+		/* read input data format file */
+		List<String> inputDataFormat = 
+				new IOService().readFile(dataFormatPath);
+			
+		/* run parser and save data to local directory */
+		TrajectoryParser parser = 
+				new TrajectoryParser(inputDataPath, inputDataFormat);
+		parser.parseToLocal(outputFormat, params);
+	}
 ```
 
 In **Example 1** the application will output the parsed data as `.CSV` files, along with the `output-format.conf` and `metadata.meta` in the given `outputDataPath` directory.
@@ -618,30 +613,30 @@ import traminer.loader.map.OsmHandler;
 import traminer.parser.TrajectoryParser;
 import traminer.parser.analyzer.Keywords.OutputFormat;
 . . .
-/** Load and parse trajectory data to MongoDB */
-public void loadParseTrajectoryData() {
-	String inputDataPath   = "/path/to/trajectory-data-folder";
-	String dataFormatPath  = "/path/to/input-data-format.txt";
-
-	/* setup MongoDB parameters */
-	String mongoHost 	= "localhost";
-	int mongoPort  		= 27017;
-	String mongoDbName	= "traminerdb";
-	MongoDBParameters params = 
-		 new MongoDBParameters(mongoHost, mongoPort, mongoDbName);
-
-	/* output data formats: ALL, SPATIAL, SPATIAL-TEMPORAL */
-	OutputFormat outputFormat = OutputFormat.ALL;
-
-	/* read input data format file */
-	List<String> inputDataFormat = 
-		 new IOService().readFile(dataFormatPath);
-
-	/* run parser and save data to MongoDB */
-	TrajectoryParser parser = 
-		 new TrajectoryParser(inputDataPath, inputDataFormat);
-	parser.parseToMongoDB(outputFormat, params);
-}
+	/** Load and parse trajectory data to MongoDB */
+    public void loadParseTrajectoryData() {
+	    String inputDataPath   = "/path/to/trajectory-data-folder";
+		String dataFormatPath  = "/path/to/input-data-format.txt";
+		
+		/* setup MongoDB parameters */
+		String mongoHost 	= "localhost";
+		int mongoPort  		= 27017;
+		String mongoDbName	= "traminerdb";
+		MongoDBParameters params = 
+				new MongoDBParameters(mongoHost, mongoPort, mongoDbName);
+		
+		/* output data formats: ALL, SPATIAL, SPATIAL-TEMPORAL */
+		OutputFormat outputFormat = OutputFormat.ALL;
+		
+		/* read input data format file */
+		List<String> inputDataFormat = 
+				new IOService().readFile(dataFormatPath);
+			
+		/* run parser and save data to MongoDB */
+		TrajectoryParser parser = 
+				new TrajectoryParser(inputDataPath, inputDataFormat);
+		parser.parseToMongoDB(outputFormat, params);
+	}
 ```
 
 In **Example 2** the application will output the parsed data, the *Ouput Data Format*, and the metadata into the default MongoDB collections: `"trajectorydata"` and `"metadata"`. 
@@ -667,6 +662,8 @@ In **Example 2** the application will output the parsed data, the *Ouput Data Fo
 [cygwin]: <https://cygwin.com/install.html>
 [mongodb-download]: <https://www.mongodb.com/download-center>
 [mongodb-install]: <https://docs.mongodb.com/manual/installation/>
+[hadoop-download]:<http://hadoop.apache.org/releases.html>
+[hadoop-install]:<https://hadoop.apache.org/docs/stable/index.html>
 [traminer-util]: <https://github.com/Hellisk/TraMiner/tree/dev/traminer-util-lib>
 [traminer-io]: <https://github.com/Hellisk/TraMiner/tree/dev/traminer-io-lib>
 [javafx]: <http://docs.oracle.com/javase/8/javafx/get-started-tutorial/jfx-overview.htm>

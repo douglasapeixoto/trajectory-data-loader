@@ -18,6 +18,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
+import traminer.parser.MetadataService;
 import traminer.parser.TrajectoryParser;
 
 /**
@@ -48,7 +49,7 @@ public class OutputGUIController implements Initializable {
 		valueCol.setCellValueFactory(
                 new PropertyValueFactory<MetadataEntry,String>("value"));
 		
-		String metadataScript = TrajectoryParser.getMetadata();
+		String metadataScript = MetadataService.getMetadata();
 		List<MetadataEntry> itemList = new ArrayList<MetadataEntry>();
 		for (String item : metadataScript.split("\n")) {
 			String items[] = item.split("\\s+");

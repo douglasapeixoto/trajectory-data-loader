@@ -121,9 +121,7 @@ public enum Keywords {
 		@LexicalSymbol(symbol = Symbols.DBNameSymbol)
 		MONGODB, 
 		@LexicalSymbol(symbol = Symbols.DBNameSymbol)
-		HBASE,
-		@LexicalSymbol(symbol = Symbols.DBNameSymbol)
-		VOLTDB
+		HDFS
 	}
 
 	/**

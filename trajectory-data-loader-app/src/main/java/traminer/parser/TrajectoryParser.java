@@ -1,5 +1,6 @@
 package traminer.parser;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -8,7 +9,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -20,7 +20,6 @@ import traminer.io.IOService;
 import traminer.io.params.HDFSParameters;
 import traminer.io.params.LocalFSParameters;
 import traminer.io.params.MongoDBParameters;
-import traminer.io.params.VoltDBParameters;
 import traminer.parser.analyzer.Keywords;
 import traminer.parser.analyzer.LexicalAnalyzer;
 import traminer.parser.analyzer.Symbols;
@@ -59,8 +58,6 @@ public class TrajectoryParser implements ParserInterface {
 	private OutputFormat outputFormat = null;
 	// tokens from the Lexical analyzer
 	private List<Token> lexTokens = null;
-	// metadata service and parameters
-	private MetadataService metadataService = null;
 	// total number of files read
 	private long filesCount = 0;
 	// number of files that could not be read
@@ -69,8 +66,6 @@ public class TrajectoryParser implements ParserInterface {
     private AtomicInteger trajCount = new AtomicInteger(0);
 	// metadata script generated during the data loading
 	private static String outputFormatScript = "";
-	// output format script generated during the data loading
-	private static String metadataScript = "";
 
 	// System log
 	private static Logger log = Logger.getLogger(TrajectoryParser.class);
@@ -155,42 +150,24 @@ public class TrajectoryParser implements ParserInterface {
 	 * Parse the input trajectory data based on the 
 	 * user-specified parameters. 
 	 * <p> 
-	 * Save parsed data and output files to HBase distributed 
-	 * database system.
+	 * Save parsed data and output files to HDFS distributed 
+	 * file system.
 	 * 
 	 * @param outputFormat The {@link OutputFormat} of choice 
 	 * 		(e.g. SPATIAL, ALL, SPATIAL_TEMPORAL).
-	 * @param hbaseParams HBase access parameters.
+	 * @param hdfsParams HDFS access parameters.
 	 * 
 	 * @return Whether or not the parsing was successful.
 	 */
-	public boolean parseToHBase(
+	public boolean parseToHDFS(
 			final OutputFormat outputFormat,
-			final HDFSParameters hbaseParams){
-		// TODO:
+			final HDFSParameters hdfsParams) {
+		// initialize HDFS storage service
+		DataWriter.init(hdfsParams);
 		this.outputFormat = outputFormat;
-		return false;
-	}
-
-	/**
-	 * Parse the input trajectory data based on the 
-	 * user-specified parameters. 
-	 * <p> 
-	 * Save parsed data and output files to VoltDB in-memory 
-	 * database system.
-	 * 
-	 * @param outputFormat The {@link OutputFormat} of choice 
-	 * 		(e.g. SPATIAL, ALL, SPATIAL_TEMPORAL).
-	 * @param voltdbParams VoltDB access parameters.
-	 * 
-	 * @return Whether or not the parsing was successful.
-	 */
-	public boolean parseToVoltDB(
-			final OutputFormat outputFormat,
-			final VoltDBParameters voltdbParams){
-		// TODO:
-		this.outputFormat = outputFormat;
-		return false;
+		
+		// parse and store to HDFS
+		return parse();
 	}
 	
 	/**
@@ -213,12 +190,10 @@ public class TrajectoryParser implements ParserInterface {
 		
 		// init metadata management service			
 		if (dataFormat.getCoordinateSystem().equals(Keywords.GEOGRAPHIC)) {
-			metadataService = new MetadataService(
-					new HaversineDistanceFunction());
+			MetadataService.init(new HaversineDistanceFunction());
 		} else 
 		if (dataFormat.getCoordinateSystem().equals(Keywords.CARTESIAN)) {
-			metadataService = new MetadataService(
-					new EuclideanDistanceFunction());
+			MetadataService.init(new EuclideanDistanceFunction());
 		} else {
 			throw new IllegalArgumentException("Coordinates systems '" + 
 						dataFormat.getCoordinateSystem()+ "' is not supported.");
@@ -233,8 +208,7 @@ public class TrajectoryParser implements ParserInterface {
 		try {
 			outputFormatScript = DataWriter
 					.saveOutputFormatFile(dataFormat, outputFormat);
-			metadataScript     = DataWriter
-					.saveMetadataFile(dataFormat, outputFormat, metadataService);
+			DataWriter.saveMetadataFile(dataFormat, outputFormat);
 			return true;
 		} catch (ParserException e) {
 			log.error(e.getMessage(), e.getCause());
@@ -256,11 +230,16 @@ public class TrajectoryParser implements ParserInterface {
 		delimList = dataFormat.getDelimiters().toArray(delimList);
 
 		// read file paths recursively (path names only)
-		List<String> pathList = IOService.getFilesPathList(inputDataPath);
+		List<String> pathList = new ArrayList<>();
+		try {
+			pathList = IOService.getFilesPathList(inputDataPath);
+		} catch (IOException e) {
+			log.error("Error reading input data path.", e);
+		}
 		
 		// number of files read (metadata)
 		filesCount = pathList.size();
-		metadataService.setFilesCount(filesCount);
+		MetadataService.setFilesCount(filesCount);
 		
 		// process every file
 		for (String path : pathList) {
@@ -526,7 +505,7 @@ public class TrajectoryParser implements ParserInterface {
 		for (String delim : array.getDelimiters()) {
 			arrayString = arrayString.replace(delim, ",");
 		}
-// TODO: colocar os attributos de um general array delta-compressed?
+		// TODO: colocar os attributos de um general array delta-compressed?
 		return arrayString;
 	}
 
@@ -615,7 +594,7 @@ String itemValues[] = getAttributes(arrayString, delimList);
 		fixTimeStamps(tValues, tAttr.type);
 
 		// update metadata (if values are numeric)
-		metadataService.addValues(
+		MetadataService.addValues(
 				xValues, isDeltaX, xAttr.type,
 				yValues, isDeltaY, yAttr.type,
 				tValues, isDeltaT, tAttr.type);
@@ -744,14 +723,6 @@ String itemValues[] = getAttributes(arrayString, delimList);
 				}
 			}			
 		}
-	}
-	
-	/**
-	 * @return The metadata script generated during the
-	 * data loading and parsing.
-	 */
-	public static String getMetadata(){
-		return metadataScript;
 	}
 
 	/**

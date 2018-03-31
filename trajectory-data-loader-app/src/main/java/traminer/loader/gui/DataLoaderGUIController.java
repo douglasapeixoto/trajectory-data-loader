@@ -8,7 +8,6 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.ResourceBundle;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
 import javafx.beans.value.ChangeListener;
@@ -50,9 +49,7 @@ import traminer.io.log.LogWriter;
 import traminer.io.params.HDFSParameters;
 import traminer.io.params.LocalFSParameters;
 import traminer.io.params.MongoDBParameters;
-import traminer.io.params.VoltDBParameters;
-import traminer.loader.map.OsmHandlerFactory;
-import traminer.loader.map.OsmHandler;
+import traminer.loader.generator.TrajectoryGenerator;
 import traminer.parser.ParserInterface;
 import traminer.parser.TrajectoryParser;
 import traminer.parser.analyzer.Keywords.OutputDatabase;
@@ -63,7 +60,7 @@ import traminer.parser.analyzer.Keywords.OutputFormat;
  * of the GUI {@link DataLoaderScene.fxml}. Binds the GUI components 
  * with the Java code.
  * 
- * @author uqdalves
+ * @author douglasapeixoto
  */
 @SuppressWarnings("serial")
 public class DataLoaderGUIController implements Initializable, ParserInterface {
@@ -109,7 +106,7 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	@FXML
 	private Tab mongodbTab;
 	@FXML
-	private Tab hbaseTab;
+	private Tab hdfsTab;
 	@FXML
 	private Tab voltdbTab;
 	@FXML
@@ -132,14 +129,23 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	private Button mongodbListBtn;
 	@FXML
 	private Button mongodbStartBtn;
+	// Configure HDFS output database
+	@FXML
+	private TextField hdfsHostnameTxt;
+	@FXML
+	private TextField hdfsPortnumberTxt;
+	@FXML
+	private TextField hdfsOutputDirTxt;
+	@FXML
+	private Button hdfsSetDefaultBtn;
 	// Load and parse (main action buttons)
 	@FXML
-    private Button loadParseTrajBtn;
+    private Button loadParseBtn;
 	@FXML
     private Button loadParseMapBtn;
 	// Help buttons
 	@FXML
-    private Button trajHelpBtn;
+    private Button helpBtn;
 	@FXML
     private Button mapHelpBtn;
 	// Log field
@@ -148,30 +154,47 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	@FXML
 	private ScrollPane logScrollPane = new ScrollPane();
 	
+	// Synthetic data generation components
+	@FXML
+	private TextField quantityTxt;
+	@FXML
+	private TextField minPointsTxt;
+	@FXML
+	private TextField maxPointsTxt;
+	@FXML
+	private TextField minTimeTxt;
+	@FXML
+	private TextField maxTimeTxt;
+	@FXML
+	private TextField timeRateTxt;
+	@FXML
+	private TextField minXTxt;
+	@FXML
+	private TextField minYTxt;
+	@FXML
+	private TextField maxXTxt;
+	@FXML
+	private TextField maxYTxt;
+	
 	// fields to read  from the GUI
 	private String inputDataPath = "";
-	private String inputMapPath = "";
 	private String dataFormatContent = "";
 	private OutputFormat outputFormat = DEFAULT_OUT_FORMAT;                                                               
 	private OutputDatabase outputDatabase = DEFAULT_OUT_DB;
-	
 	
 	@Override
 	public void initialize(URL fxmlFileLocation, ResourceBundle resources) {
 		// initialize the logic here: all @FXML variables will have been injected
 		handleLog();
-		handleOpenData();
-		handleOpenMapData();
-		handleOpenInputFormat();
-		handleSaveAndLoadInputFormat();
 		handleOutputFormatSelection();
-		handleDatabaseChoice();
 		handleMongoDBConfiguration();
-		handleOpenOutputLocalDir();
-		handleHelp();
-		// main processes, run in a different thread 
-		handleLoadAndParseTrajectoryData();
-		handleLoadAndParseMapData();
+		handleHDFSConfiguration();
+		
+		// feed the output database choice box
+		ObservableList<OutputDatabase> databaseList = 
+				FXCollections.observableArrayList(OutputDatabase.values());
+		outputDatabaseChoice.setItems(databaseList);
+		outputDatabaseChoice.setValue(outputDatabase);
 	}
 		
 	/**
@@ -195,109 +218,79 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	/**
 	 * Open directory containing the input trajectory data.
 	 */
-	private void handleOpenData() {
-		openDataBtn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-            	final DirectoryChooser dirChooser = new DirectoryChooser();
-            	dirChooser.setTitle("Open Input Data Folder");
-                final File selectedDir = dirChooser.showDialog(
-                		rootPane.getScene().getWindow());
-                if (selectedDir != null) {
-                	String dataPath = selectedDir.getAbsolutePath();
-                	inputDataPathTxt.setText(dataPath);
-                	inputDataPathTxt.home();
-                	
-                	addLogInfo("Input data path set as '" + dataPath + "'");
-                }
-            }
-        });
-	}
-
-	/**
-	 * Open file containing the input map data.
-	 */
-	private void handleOpenMapData() {
-		openMapBtn.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-            public void handle(ActionEvent event) {
-            	final FileChooser fileChooser = new FileChooser();
-            	fileChooser.setTitle("Open Input OSM Map File");
-            	final File selectedFile = fileChooser.showOpenDialog(
-                		rootPane.getScene().getWindow());
-                if (selectedFile != null) {
-                	String mapDataPath = selectedFile.getAbsolutePath();
-                	inputMapPathTxt.setText(mapDataPath);
-                	
-                	addLogInfo("Input map file '" + mapDataPath + "' loaded");
-                }
-            }
-        });
+	@FXML
+	private void actionOpenData() {
+    	final DirectoryChooser dirChooser = new DirectoryChooser();
+    	dirChooser.setTitle("Open Input Data Folder");
+        final File selectedDir = dirChooser.showDialog(
+        		rootPane.getScene().getWindow());
+        if (selectedDir != null) {
+        	String dataPath = selectedDir.getAbsolutePath();
+        	inputDataPathTxt.setText(dataPath);
+        	inputDataPathTxt.home();
+        	
+        	addLogInfo("Input data path set as '" + dataPath + "'");
+        }
 	}
 
 	/**
 	 * Open the file containing the input data format.
 	 */
-	private void handleOpenInputFormat() {
-		openInputFormatBtn.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-            public void handle(ActionEvent event) {
-            	final FileChooser fileChooser = new FileChooser();
-            	fileChooser.setTitle("Open Input Data Format");
-            	final File selectedFile = fileChooser.showOpenDialog(
-                		rootPane.getScene().getWindow());
-                if (selectedFile != null) {
-                	String dataFormatPath = selectedFile.getAbsolutePath();
-                	String dataFormatName = selectedFile.getName();
-                	// read data format file content
-            		List<String> fileLines = IOService.readFile(selectedFile);
-            		inputDataFormatTxt.setText("# Format file name '" + dataFormatName + "'");
-                	for (String line : fileLines) {
-                		inputDataFormatTxt.appendText("\n" + line);
-                	}
-                	dataFormatContent = inputDataFormatTxt.getText();
-                	inputDataFormatTxt.home();
-                	
-                	addLogInfo("Input data format file '" + dataFormatPath + "' loaded");
-                	addLogInfo("Input data format content saved");
-                }
-            }
-        });
+	@FXML
+	private void actionOpenInputFormat() {
+    	final FileChooser fileChooser = new FileChooser();
+    	fileChooser.setTitle("Open Input Data Format");
+    	final File selectedFile = fileChooser.showOpenDialog(
+        		rootPane.getScene().getWindow());
+        if (selectedFile != null) {
+        	String dataFormatPath = selectedFile.getAbsolutePath();
+        	String dataFormatName = selectedFile.getName();
+        	// read data format file content
+    		try {
+				List<String> fileLines = IOService.readFile(selectedFile);
+				inputDataFormatTxt.setText("# Format file name '" + dataFormatName + "'");
+				for (String line : fileLines) {
+					inputDataFormatTxt.appendText("\n" + line);
+				}
+				dataFormatContent = inputDataFormatTxt.getText();
+				inputDataFormatTxt.home();
+				
+				addLogInfo("Input data format file '" + dataFormatPath + "' loaded");
+				addLogInfo("Input data format content saved");
+			} catch (IOException e) {
+				addLogError("Error opening data format file.");
+			}
+        }
 	}
 
 	/**
-	 * Save and load the input data format content.
+	 * Save the input data format content.
 	 */
-	private void handleSaveAndLoadInputFormat() {
-		// save the input data format content
-		saveInputFormatBtn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                if (!inputDataFormatTxt.getText().isEmpty()) {
-                	dataFormatContent = inputDataFormatTxt.getText();
-                	
-                	addLogInfo("Input data format content saved");
-                } else{
-                	addLogInfo("No input data format content to be saved");
-                }
-            }
-        });
-		
-		// load a previously saved input data format content
-		loadInputFormatBtn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                if (!dataFormatContent.isEmpty()) {
-                	inputDataFormatTxt.clear();
-                	inputDataFormatTxt.setText(dataFormatContent);
-                	inputDataFormatTxt.home();
-                	
-                	addLogInfo("Input data format content loaded.");
-                } else{
-                	addLogInfo("No input data format content to be loaded.");
-                }
-            }
-        });
+	@FXML
+	private void actionSaveInputFormat() {
+        if (!inputDataFormatTxt.getText().isEmpty()) {
+        	dataFormatContent = inputDataFormatTxt.getText();
+        	
+        	addLogInfo("Input data format content saved");
+        } else{
+        	addLogInfo("No input data format content to be saved");
+        }
+	}
+	
+	/**
+	 * Load the input data format content.
+	 */
+	@FXML
+	private void actionLoadInputFormat() {
+        if (!dataFormatContent.isEmpty()) {
+        	inputDataFormatTxt.clear();
+        	inputDataFormatTxt.setText(dataFormatContent);
+        	inputDataFormatTxt.home();
+        	
+        	addLogInfo("Input data format content loaded.");
+        } else{
+        	addLogInfo("No input data format content to be loaded.");
+        }
 	}
 
 	/**
@@ -334,42 +327,47 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	/**
 	 * Handle the actions of the output Database selection.
 	 */
-	private void handleDatabaseChoice() {
-		ObservableList<OutputDatabase> databaseList = 
-				FXCollections.observableArrayList(OutputDatabase.values());
-		outputDatabaseChoice.setItems(databaseList);
-		outputDatabaseChoice.setValue(outputDatabase);
-				
-		outputDatabaseChoice.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				outputDatabase = outputDatabaseChoice.getValue();
-				
-				localTab.setDisable(true);
-				mongodbTab.setDisable(true);
-				hbaseTab.setDisable(true);
-				voltdbTab.setDisable(true);
-				if (outputDatabase.equals(OutputDatabase.LOCAL)) {
-					localTab.setDisable(false);
-					dbConfPane.getSelectionModel().select(localTab);
-				} else
-				if (outputDatabase.equals(OutputDatabase.MONGODB)) {
-					mongodbTab.setDisable(false);
-					dbConfPane.getSelectionModel().select(mongodbTab);
-				} else
-				if (outputDatabase.equals(OutputDatabase.HBASE)) {
-					hbaseTab.setDisable(false);
-					dbConfPane.getSelectionModel().select(hbaseTab);
-				} else
-				if (outputDatabase.equals(OutputDatabase.VOLTDB)) {
-					voltdbTab.setDisable(false);
-					dbConfPane.getSelectionModel().select(voltdbTab);
-				}
-				
-				addLogInfo("Output database set as '" + outputDatabase.name() + "'.");
-			}
-		});
-
+	@FXML
+	private void actionOutputDatabaseChoice() {
+		outputDatabase = outputDatabaseChoice.getValue();
+		
+		localTab.setDisable(true);
+		mongodbTab.setDisable(true);
+		hdfsTab.setDisable(true);
+		voltdbTab.setDisable(true);
+		
+		if (outputDatabase.equals(OutputDatabase.LOCAL)) {
+			localTab.setDisable(false);
+			dbConfPane.getSelectionModel().select(localTab);
+		} else
+		if (outputDatabase.equals(OutputDatabase.MONGODB)) {
+			mongodbTab.setDisable(false);
+			dbConfPane.getSelectionModel().select(mongodbTab);
+		} else
+		if (outputDatabase.equals(OutputDatabase.HDFS)) {
+			hdfsTab.setDisable(false);
+			dbConfPane.getSelectionModel().select(hdfsTab);
+		}
+		
+		addLogInfo("Output database set as '" + outputDatabase.name() + "'.");
+	}
+	
+	/**
+	 * Choose location to output data to a local directory.
+	 */
+	@FXML
+	private void actionOpenOutputFolder() {
+    	final DirectoryChooser dirChooser = new DirectoryChooser();
+    	dirChooser.setTitle("Open Output Data Folder");
+        final File selectedDir = dirChooser.showDialog(
+        		rootPane.getScene().getWindow());
+        if (selectedDir != null) {
+        	String dataPath = selectedDir.getAbsolutePath();
+        	outputDataPathTxt.setText(dataPath);
+        	outputDataPathTxt.home();
+        	
+        	addLogInfo("Local output data path set as '" + dataPath + "'");
+        }
 	}
 
 	/**
@@ -438,51 +436,51 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 				}
 			}
 		});
-	}
-	
+	}	
+
 	/**
-	 * Choose location to output data to a local directory.
+	 * Handle the HDFS input configurations and actions (HDFS tab).
 	 */
-	private void handleOpenOutputLocalDir() {
-		openOuputFolderBtn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-            	final DirectoryChooser dirChooser = new DirectoryChooser();
-            	dirChooser.setTitle("Open Output Data Folder");
-                final File selectedDir = dirChooser.showDialog(
-                		rootPane.getScene().getWindow());
-                if (selectedDir != null) {
-                	String dataPath = selectedDir.getAbsolutePath();
-                	outputDataPathTxt.setText(dataPath);
-                	outputDataPathTxt.home();
-                	
-                	addLogInfo("Local output data path set as '" + dataPath + "'");
-                }
-            }
-        });
-	}
+	private void handleHDFSConfiguration() {
+	    // set default HDFS parameters (gui start)
+	    hdfsHostnameTxt.setText(HDFSParameters.getDefaultHostName());
+		hdfsPortnumberTxt.setText(""+HDFSParameters.getDefaultPort());
+	    
+		// set default HDFS parameters (button)
+		hdfsSetDefaultBtn.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+			    hdfsHostnameTxt.setText(HDFSParameters.getDefaultHostName());
+				hdfsPortnumberTxt.setText(""+HDFSParameters.getDefaultPort());
+			}
+		});	
+		
+		// force the HDFS port field to be numeric only
+	    hdfsPortnumberTxt.textProperty().addListener(new ChangeListener<String>() {
+	        @Override
+	        public void changed(ObservableValue<? extends String> observable, 
+	        		String oldValue, String newValue) {
+	            if (!newValue.matches("\\d*")) {
+	            	hdfsPortnumberTxt.setText(newValue.replaceAll("[^\\d]", ""));
+	            }
+	        }
+	    });
+	}	
 	
 	/**
 	 * Open the Map help HTML page. 
 	 */
-	private void handleHelp() {
+	@FXML
+	private void actionHelp() {
 		// show the trajectory loader help window
-		trajHelpBtn.setOnAction(new EventHandler<ActionEvent>() {
+		helpBtn.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
 				showHtmlPage("trajectory-loader-help-index.html");
 			}
 		});
-		
-		// show the map loader help window
-		mapHelpBtn.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				showHtmlPage("map-loader-help-index.html");
-			}
-		});
 	}
-
+	
 	/**
 	 * Handle the action of the main button in the trajectory parsing tab.
 	 * <p>
@@ -492,25 +490,21 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	 * 
 	 * @return A runnable thread process.
 	 */
-	private void handleLoadAndParseTrajectoryData() {
-		loadParseTrajBtn.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				// check if mandatory fields were provided
-				if (!validateDataFields()) return;
+	@FXML
+	private void actionLoadAndParseData() {
+		// check if mandatory fields were provided
+		if (!validateDataFields()) return;
 
-				inputDataPath = inputDataPathTxt.getText();
+		inputDataPath = inputDataPathTxt.getText();
 
-				addLogInfo("Running TRAJECTORY data loader and parser...");
-				addLogInfo("Running with configurations:");
-				addLogInfo(">> Input data directory: '" + inputDataPath);
-				addLogInfo(">> Output data format: '" + outputFormat.name() + "'");
-				addLogInfo(">> Output database: '" + outputDatabase.name() + "'");
-	
-				// Call the process to parse the trajectory data
-				callTrajectoryParser();
-			}
-		});
+		addLogInfo("Running TRAJECTORY data loader and parser...");
+		addLogInfo("Running with configurations:");
+		addLogInfo(">> Input data directory: '" + inputDataPath);
+		addLogInfo(">> Output data format: '" + outputFormat.name() + "'");
+		addLogInfo(">> Output database: '" + outputDatabase.name() + "'");
+
+		// Call the process to parse the trajectory data
+		callTrajectoryParser();
 	}
 	
 	/**
@@ -521,7 +515,7 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	private void callTrajectoryParser(){
 		// TODO		
 		// add a method to count files in a folder in the IOService.
-		// showProgressBar();	
+		// showProgressBar();
 		
 		// creates a new runnable thread for this process
 		Callable<Boolean> process = null;
@@ -560,26 +554,32 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 					@Override
 					public Boolean call() throws Exception {
 						// return the parse result
-						return parser.parseToMongoDB(outputFormat, new MongoDBParameters(mongoHost, 
-										Integer.parseInt(mongoPort), mongoDbName));
+						MongoDBParameters mongoParams = new MongoDBParameters(
+								mongoHost, Integer.parseInt(mongoPort), mongoDbName);
+						return parser.parseToMongoDB(outputFormat, mongoParams);
 										
 					}};
 			} else
-			if (outputDatabase.equals(OutputDatabase.HBASE)) {
-				addLogError("Sorry, 'HBase' storage is not provided yet!");
-				//TODO
+			if (outputDatabase.equals(OutputDatabase.HDFS)) {
+				String hdfsHost = hdfsHostnameTxt.getText();
+				String hdfsPort = hdfsPortnumberTxt.getText();
+				String hdfsOutDir = hdfsOutputDirTxt.getText();
 				
-				// parse data and save to HBase
-				parseResult = parser.parseToHBase(outputFormat, 
-						new HDFSParameters());
-			} else
-			if (outputDatabase.equals(OutputDatabase.VOLTDB)) {
-				addLogError("Sorry, 'VoltDB' storage is not provided yet!");
-				//TODO
-	
-				// parse data and save to HBase
-				parseResult = parser.parseToVoltDB(outputFormat, 
-						new VoltDBParameters());
+				addLogInfo(">> HDFS host name: '" + hdfsHost + "'");
+				addLogInfo(">> HDFS port number: '" + hdfsPort + "'");
+				addLogInfo(">> HDFS database name: '" + hdfsOutDir + "'");
+				
+				// parse data and save to HDFS
+				// run process in a separated thread
+				process = new Callable<Boolean>() {
+					@Override
+					public Boolean call() throws Exception {
+						// return the parse result
+						HDFSParameters hdfsParams = new HDFSParameters(
+								hdfsHost, Integer.parseInt(hdfsPort));
+						hdfsParams.setRootDir(hdfsOutDir);
+						return parser.parseToHDFS(outputFormat, hdfsParams);			
+					}};
 			}
 			
 			// start a new thread to run the process
@@ -587,13 +587,9 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 			new Thread(futureTask).start();
 			// await async process finish
 			parseResult = futureTask.get();
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
 			addLogError("Parsing Error!\n");
-			showErrorPopup("Parsing Error!");
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			addLogError("Parsing Error!\n");
-			showErrorPopup("Parsing Error!");
+			showPopupError("Parsing Error!");
 			e.printStackTrace();
 		} finally {
 			// print parser messages (if any) to log window
@@ -604,91 +600,131 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 			if (parseResult) {
 				addLogInfo("Trajectory Data Parsing Successful!");
 				// show confirmation popup
-				showInfoPopup(null,"Trajectory Data Parsing Successful!");
-				// Open a Windows with the output results
-				showResultWindow();
+				showPopupInfo(null,"Trajectory Data Parsing Successful!");
+				// Open a Windows with the metadata results
+				showResultsWindow();
 			} else {
 				addLogError("Parsing Error!\n");
 				// show error popup
-				showErrorPopup("Parsing Error!");
+				showPopupError("Parsing Error!");
 			}
 		}
 	}
-	
-	/**
-	 * Handle the action of the main button in the Map parsing tab.
-	 * 
-	 * Run Map data loading and parsing (Jython).
-	 */
-	private void handleLoadAndParseMapData(){
-		loadParseMapBtn.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				// check if mandatory fields were provided
-				if (!validateMapFields()) return;
-				
-				inputMapPath = inputMapPathTxt.getText();
-				
-				addLogInfo("Running MAP data loader and parser...");
-				addLogInfo("Running with configurations:");
-				addLogInfo(">> Input map data file: '" + inputMapPath);
-				addLogInfo(">> Output database: '" + outputDatabase.name() + "'");
-			
-				boolean parseResult = false;
-				String resultsString = "";
-				try {
-					// start a new map parser (Python parser)
-					OsmHandlerFactory osmFactory = new OsmHandlerFactory();
 		
-					if (outputDatabase.equals(OutputDatabase.LOCAL)) {
-						addLogError("Sorry, 'Local' storage is not provided yet!");
-						//TODO
-					} else
-					if (outputDatabase.equals(OutputDatabase.MONGODB)) {
-						String mongoHost = mongodbHostTxt.getText();
-						String mongoPort = mongodbPortTxt.getText();
-						String mongoDbName = mongodbDatabaseTxt.getText();
-						
-						addLogInfo(">> MongoDB host name: '" + mongoHost + "'");
-						addLogInfo(">> MongoDB port number: '" + mongoPort + "'");
-						addLogInfo(">> MongoDB database name: '" + mongoDbName + "'");
-						
-						// parse data and save to MongoDB
-						OsmHandler osmHandler = osmFactory.create(
+	/**
+	 * Handle the action of the Generate Synthetic 
+	 * trajectories button.
+	 */
+	@FXML
+	private void actionGenerateSynthetic() {
+		int quantity, minPts, maxPts;
+		long maxTime, minTime, timeRate;
+		double minX, minY, maxX, maxY;
+		
+		// check if mandatory fields were provided
+		if (!validateSyntheticGenerationFields()) return;
+
+		quantity = Integer.parseInt(quantityTxt.getText());
+		minPts = Integer.parseInt(minPointsTxt.getText());
+		maxPts = Integer.parseInt(maxPointsTxt.getText());
+		minTime = Long.parseLong(minTimeTxt.getText());
+		maxTime = Long.parseLong(maxTimeTxt.getText());
+		timeRate = Long.parseLong(timeRateTxt.getText());
+		minX = Double.parseDouble(minXTxt.getText()); 
+		minY = Double.parseDouble(minYTxt.getText()); 
+		maxX = Double.parseDouble(maxXTxt.getText());
+		maxY = Double.parseDouble(maxYTxt.getText());
+
+		addLogInfo("Running Synthetic TRAJECTORY data generator...");
+		addLogInfo("Running with configurations:");
+		addLogInfo(">> Input data directory: '" + inputDataPath);
+		addLogInfo(">> Output data format: 'SPATIAL_TEMPORAL'");
+		addLogInfo(">> Output database: '" + outputDatabase.name() + "'");
+		addLogInfo(">> Number of Trajectories: '" + quantity + "'");
+		addLogInfo(">> Min. points per trajectory: '" + minPts  + "'");
+		addLogInfo(">> Max. points per trajectory: '" + maxPts  + "'");
+		addLogInfo(">> Min. initial time: '" + minTime  + "'");
+		addLogInfo(">> Max. initial time: '" + maxTime  + "'");
+		addLogInfo(">> Time rate: '" + timeRate  + "'");
+		addLogInfo(">> Coverage: '(" + minX+", "+minY+", "+maxX+", "+maxY + ")'");		
+
+		// creates a new runnable thread for this process
+		Callable<Boolean> process = null;
+		boolean parseResult = false;
+		try {	
+			// start a new generator
+			TrajectoryGenerator generator = new TrajectoryGenerator(
+					quantity, minPts, maxPts, minX, minY, maxX, maxY, 
+					minTime, maxTime, timeRate);
+			
+			if (outputDatabase.equals(OutputDatabase.LOCAL)) {
+				String outputDataPath = outputDataPathTxt.getText();
+				addLogInfo(">> Output data directory: '" + outputDataPath + "'");
+				process = new Callable<Boolean>() {
+					@Override
+					public Boolean call() throws Exception {
+						return generator.generateToLocal(
+								new LocalFSParameters(outputDataPath));
+					}};
+			} else
+			if (outputDatabase.equals(OutputDatabase.MONGODB)) {
+				String mongoHost = mongodbHostTxt.getText();
+				String mongoPort = mongodbPortTxt.getText();
+				String mongoDbName = mongodbDatabaseTxt.getText();
+				addLogInfo(">> MongoDB host name: '" + mongoHost + "'");
+				addLogInfo(">> MongoDB port number: '" + mongoPort + "'");
+				addLogInfo(">> MongoDB database name: '" + mongoDbName + "'");
+
+				process = new Callable<Boolean>() {
+					@Override
+					public Boolean call() throws Exception {
+						MongoDBParameters mongoParams = new MongoDBParameters(
 								mongoHost, Integer.parseInt(mongoPort), mongoDbName);
-						parseResult   = osmHandler.parse(inputMapPath);
-						resultsString = osmHandler.getParserResults();
-					} else
-					if (outputDatabase.equals(OutputDatabase.HBASE)) {
-						addLogError("Sorry, 'HBase' storage is not provided yet!");
-						// TODO
-					} else
-					if (outputDatabase.equals(OutputDatabase.VOLTDB)) {
-						addLogError("Sorry, 'VoltDB' storage is not provided yet!");
-						// TODO
-					}
-				} finally {
-					// print parser messages (if any) to log window
-					addLogMsg(LogWriter.getLogWriterAsList());
-					LogWriter.clearLog();
-					
-					// show parser result
-					if (parseResult) {
-						addLogInfo("Map Data Parsing Successful!");
-						addLogInfo("Parser Results: " + resultsString);
-						// show confirmation popup
-						showInfoPopup("Map Data Parsing Successful!\n\n",
-									  "Parser Results: " + resultsString);
-					} else {
-						addLogError("Map Data Parsing Error!\n");
-						// show confirmation popup
-						showErrorPopup("Map Data Parsing Error!");
-					}
-				}
+						return generator.generateToMongoDB(mongoParams);
+										
+					}};
+			} else
+			if (outputDatabase.equals(OutputDatabase.HDFS)) {
+				String hdfsHost = hdfsHostnameTxt.getText();
+				String hdfsPort = hdfsPortnumberTxt.getText();
+				String hdfsOutDir = hdfsOutputDirTxt.getText();
+				addLogInfo(">> HDFS host name: '" + hdfsHost + "'");
+				addLogInfo(">> HDFS port number: '" + hdfsPort + "'");
+				addLogInfo(">> HDFS database name: '" + hdfsOutDir + "'");
+
+				process = new Callable<Boolean>() {
+					@Override
+					public Boolean call() throws Exception {
+						HDFSParameters hdfsParams = new HDFSParameters(
+								hdfsHost, Integer.parseInt(hdfsPort));
+						hdfsParams.setRootDir(hdfsOutDir);
+						return generator.generateToHDFS(hdfsParams);			
+					}};
 			}
-		});
+			
+			// start a new thread to run the process
+			FutureTask<Boolean> futureTask = new FutureTask<>(process);
+			new Thread(futureTask).start();
+			// await async process finish
+			parseResult = futureTask.get();
+		} catch (Exception e) {
+			addLogError("Generator Error!\n");
+			showPopupError("Generator Error!");
+			e.printStackTrace();
+		} finally {
+			LogWriter.clearLog();
+			if (parseResult) {
+				addLogInfo("Trajectory Generation Successful!");
+				showPopupInfo(null,"Trajectory Generation Successful!");
+				// Open a Windows with the metadata results
+				showResultsWindow();
+			} else {
+				addLogError("Generator Error!\n");
+				showPopupError("Generator Error!");
+			}
+		}
 	}
-	
+
 	/**
 	 * Check whether all mandatory fields for trajectory data
 	 * loading/parsing were provided.
@@ -711,6 +747,128 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 			addLogError("Output database must be provided.");
 			validate = false;
 		}
+		if (!validateOutputDatabaseFields()){
+			validate = false;
+		}
+		
+		return validate;
+	}
+	
+	/**
+	 * Check whether the fields for synthetic data
+	 * generation are correct
+	 * 
+	 * @return True if validation passed.
+	 */
+	private boolean validateSyntheticGenerationFields() {
+		int quantity, minPts, maxPts;
+		long maxTime, minTime, timeRate;
+		double minX, minY, maxX, maxY;
+		
+		try {
+			quantity = Integer.parseInt(quantityTxt.getText());
+			if (quantity <= 0) {
+				addLogError("Number of trajectories must be greater than zero.");
+				return false;
+			}
+		} catch (NumberFormatException e) {
+			addLogError("Invalid number of Trajectories.");
+			return false;
+		}
+		try {
+			minPts = Integer.parseInt(minPointsTxt.getText());
+			if (minPts <= 0) {
+				addLogError("Min. Points must be greater than zero.");
+				return false;
+			}
+		} catch (NumberFormatException e) {
+			addLogError("Invalid number of Min. Points.");
+			return false;
+		}
+		try {
+			maxPts = Integer.parseInt(maxPointsTxt.getText());
+			if (maxPts < minPts) {
+				addLogError("Max. Points must be greater than Min. Points.");
+				return false;
+			}
+		} catch (NumberFormatException e) {
+			addLogError("Invalid number of Max. Points.");
+			return false;
+		}
+		try {
+			minTime = Long.parseLong(minTimeTxt.getText());
+			if (minTime < 0) {
+				addLogError("Min. Start Time must be greater than zero.");
+				return false;
+			}
+		} catch (NumberFormatException e) {
+			addLogError("Invalid number of Min. Time.");
+			return false;
+		}
+		try {
+			maxTime = Long.parseLong(maxTimeTxt.getText());
+			if (maxTime < minTime) {
+				addLogError("Max. Start Time must be greater than Min. Start Time.");
+				return false;
+			}
+		} catch (NumberFormatException e) {
+			addLogError("Invalid number of Max. Time.");
+			return false;
+		}
+		try {
+			timeRate = Long.parseLong(timeRateTxt.getText());
+			if (timeRate < 0) {
+				addLogError("Time Rate must be positive.");
+				return false;
+			}
+		} catch (NumberFormatException e) {
+			addLogError("Invalid number of Time Rate.");
+			return false;
+		}
+		try {
+			minX = Double.parseDouble(minXTxt.getText()); 
+		} catch (NumberFormatException e) {
+			addLogError("Invalid Min-X value for coverage.");
+			return false;
+		}
+		try {
+			minY = Double.parseDouble(minYTxt.getText()); 
+		} catch (NumberFormatException e) {
+			addLogError("Invalid Min-Y value for coverage.");
+			return false;
+		}
+		try {
+			maxX = Double.parseDouble(maxXTxt.getText());
+			if (maxX < minX) {
+				addLogError("Max-X must be greater than Min-X.");
+				return false;
+			}
+		} catch (NumberFormatException e) {
+			addLogError("Invalid Max-X value for coverage.");
+			return false;
+		}
+		try {
+			maxY = Double.parseDouble(maxYTxt.getText());
+			if (maxY < minY) {
+				addLogError("Max-Y must be greater than Min-Y.");
+				return false;
+			}
+		} catch (NumberFormatException e) {
+			addLogError("Invalid Max-X value for coverage.");
+			return false;
+		}
+		
+		return validateOutputDatabaseFields();
+	}
+
+	/**
+	 * Check whether the mandatory fields for the 
+	 * chosen output database were provided.
+	 * 
+	 * @return True is validation passed.
+	 */
+	private boolean validateOutputDatabaseFields() {
+		boolean validate = true;
 		if (outputDatabase.equals(OutputDatabase.LOCAL)) {
 			if(outputDataPathTxt.getText().isEmpty()) {
 				addLogError("Output data path must be provided "
@@ -734,53 +892,25 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 						+ "'MONGODB' option.");
 				validate = false;
 			}
-		}
-		
-		return validate;
-	}
-
-	/**
-	 * Check whether all mandatory fields for map data
-	 * loading/parsing were provided.
-	 * 
-	 * @return True if all the mandatory fields were provided,
-	 * false otherwise.
-	 */
-	private boolean validateMapFields(){
-		boolean validate = true;
-		if (inputMapPathTxt.getText().isEmpty()) {
-			addLogError("Input MAP data path must be provided.");
-			validate = false;
-		}
-		if (outputDatabase == null) {
-			addLogError("Output database must be provided.");
-			validate = false;
-		}
-		if (outputDatabase.equals(OutputDatabase.LOCAL)) {
-			addLogError("Sorry, 'LOCAL' storage is not provided yet.");
-			validate = false;
 		} else
-		if (outputDatabase.equals(OutputDatabase.MONGODB)) {
-			if(mongodbHostTxt.getText().isEmpty()){
-				addLogError("MongoDB 'Host Name' must be provided in "
-						+ "'MONGODB' option.");
+		if (outputDatabase.equals(OutputDatabase.HDFS)) {
+			if (hdfsHostnameTxt.getText().isEmpty()) {
+				addLogError("HDFS 'Host Name' must be provided.");
 				validate = false;
 			}
-			if (mongodbPortTxt.getText().isEmpty()) {
-				addLogError("MongoDB 'Port Number' must be provided in "
-						+ "'MONGODB' option.");
+			if (hdfsPortnumberTxt.getText().isEmpty()) {
+				addLogError("HDFS 'Port Number' must be provided.");
 				validate = false;
 			}
-			if (mongodbDatabaseTxt.getText().isEmpty()) {
-				addLogError("MongoDB 'Database Name' must be provided in "
-						+ "'MONGODB' option.");
+			if (hdfsOutputDirTxt.getText().isEmpty()) {
+				addLogError("HDFS 'Output Directory' must be provided.");
 				validate = false;
 			}
 		}
 		
 		return validate;
 	}
-
+	
 	/**
 	 * Open and show the content of an HTML file
 	 * in a browser-like window.
@@ -791,22 +921,26 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	 * HTML file must be inside the application's resources folder.
 	 */
 	private void showHtmlPage(String htmlFileName){
-		String helpContent = IOService.
-				readResourcesFileContent(htmlFileName);
-		Scene scene = new Scene(
-				new HelpBrowser(helpContent, 750, 500), 
-				Color.web("#666970")); ;
-		Stage outputStage = new Stage();
-		outputStage.setTitle("TraMiner Help");
-		outputStage.setScene(scene);
-		outputStage.show();
+		try {
+			String helpContent = IOService.
+					readResourcesFileContent(htmlFileName);
+			Scene scene = new Scene(
+					new HelpBrowser(helpContent, 750, 500), 
+					Color.web("#666970")); ;
+			Stage outputStage = new Stage();
+			outputStage.setTitle("TraMiner Help");
+			outputStage.setScene(scene);
+			outputStage.show();
+		} catch (IOException e) {
+			addLogError("Error opening help HTML file.");
+		}
 	}
 
 	/**
 	 * Open a Windows with the output metadata results
 	 * after parsing success.
 	 */
-	private void showResultWindow() {
+	private void showResultsWindow() {
 		try {
 			Parent output = FXMLLoader.load(getClass().getResource("OutputScene.fxml"));
 
@@ -830,7 +964,7 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	 * @param msg 		The message header text.
 	 * @param content	The message content.
 	 */
-	private void showInfoPopup(String msg, String content) {
+	private void showPopupInfo(String msg, String content) {
 		Alert alert = new Alert(AlertType.INFORMATION);
 		alert.setTitle("Parser Message");
 		alert.setHeaderText(msg);
@@ -844,7 +978,7 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	 * 
 	 * @param content The message content.
 	 */
-	private void showErrorPopup(String content){
+	private void showPopupError(String content){
 		Alert alert = new Alert(AlertType.ERROR);
 		alert.setTitle("Parser Message");
 		alert.setHeaderText(null);
@@ -959,13 +1093,5 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 			}
 		}
 	}
-	
-	public class ProgressObserver implements Observer {
 
-		@Override
-		public void update(Observable o, Object arg) {
-			// TODO Auto-generated method stub
-			
-		}
-	}
 }

@@ -1,16 +1,16 @@
 package traminer.test.parser;
-
+/*
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
+*/
 import junit.framework.TestCase;
 import traminer.parser.MetadataService;
 import traminer.util.Printable;
 import traminer.util.spatial.SpatialUtils;
 import traminer.util.spatial.distance.EuclideanDistanceFunction;
 import traminer.util.trajectory.Trajectory;
-
+ 
 /**
  * Unit test for the {@link MetadataService}.
  * 
@@ -34,7 +34,7 @@ public class __MetadataTest__ extends TestCase implements Printable {
     /**
      * Run by JUnit before each test to initialize variables.
      */
-    @Before
+/*    @Before
     public void setUp() {
     	// trajectory 1
     	x1Values = new double[]{0,2,4,6,8};
@@ -181,4 +181,5 @@ public class __MetadataTest__ extends TestCase implements Printable {
 
 		Assert.assertArrayEquals(expected, stats, 0.0001);		
 	}
+*/	
 }

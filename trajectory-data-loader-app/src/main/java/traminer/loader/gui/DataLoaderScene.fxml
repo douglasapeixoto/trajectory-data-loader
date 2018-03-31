@@ -23,17 +23,17 @@
 
 <Pane fx:id="rootPane" maxHeight="763.0" maxWidth="900.0" minHeight="680.0" minWidth="830.0" prefHeight="720.0" prefWidth="830.0" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1" fx:controller="traminer.loader.gui.DataLoaderGUIController">
    <children>
-      <TabPane prefHeight="351.0" prefWidth="830.0" tabClosingPolicy="UNAVAILABLE">
+      <TabPane prefHeight="312.0" prefWidth="830.0" tabClosingPolicy="UNAVAILABLE">
         <tabs>
           <Tab fx:id="trajLoaderTab" text="Trajectory Data Loader">
             <content>
-              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="312.0" prefWidth="830.0">
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="282.0" prefWidth="830.0">
                      <children>
                         <Group layoutX="28.0" layoutY="33.0" />
                         <Group layoutX="411.0" layoutY="33.0" />
                         <TextField id="inputDataPathTxt" fx:id="inputDataPathTxt" layoutX="26.0" layoutY="61.0" prefHeight="31.0" prefWidth="386.0" promptText="Path to Input Data Files" />
                         <Separator layoutX="15.0" layoutY="11.0" prefHeight="3.0" prefWidth="800.0" />
-                        <TextArea id="inputFileFormatTxt" fx:id="inputDataFormatTxt" layoutX="442.0" layoutY="61.0" prefHeight="244.0" prefWidth="365.0" promptText="Edit Input Data Format" style="-fx-font-family: &quot;Consolas&quot;;" />
+                        <TextArea id="inputFileFormatTxt" fx:id="inputDataFormatTxt" layoutX="442.0" layoutY="61.0" prefHeight="190.0" prefWidth="365.0" promptText="Edit Input Data Format" style="-fx-font-family: &quot;Consolas&quot;;" />
                         <TitledPane collapsible="false" layoutX="26.0" layoutY="113.0" prefHeight="83.0" prefWidth="386.0" text="Output Data Format">
                            <content>
                             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="49.0" prefWidth="384.0">
@@ -53,22 +53,22 @@
                            </content>
                         </TitledPane>
                         <Group layoutX="298.0" layoutY="294.0" />
-                        <Button fx:id="loadParseTrajBtn" defaultButton="true" layoutX="26.0" layoutY="266.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="263.0" text="Load and Parse" />
-                        <Button id="saveInputFormatBtn" fx:id="saveInputFormatBtn" layoutX="698.0" layoutY="22.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="50.0" text="Save">
+                        <Button fx:id="loadParseBtn" defaultButton="true" layoutX="27.0" layoutY="211.0" mnemonicParsing="false" onAction="#actionLoadAndParseData" prefHeight="40.0" prefWidth="263.0" text="Load and Parse" />
+                        <Button id="saveInputFormatBtn" fx:id="saveInputFormatBtn" layoutX="698.0" layoutY="22.0" mnemonicParsing="false" onAction="#actionSaveInputFormat" prefHeight="31.0" prefWidth="50.0" text="Save">
                            <font>
                               <Font size="12.0" />
                            </font></Button>
-                        <Button id="openInputFormatBtn" fx:id="openInputFormatBtn" layoutX="590.0" layoutY="22.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="80.0" text="Open" />
-                        <Button fx:id="openDataBtn" layoutX="332.0" layoutY="22.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="80.0" text="Open" />
+                        <Button id="openInputFormatBtn" fx:id="openInputFormatBtn" layoutX="590.0" layoutY="22.0" mnemonicParsing="false" onAction="#actionOpenInputFormat" prefHeight="31.0" prefWidth="80.0" text="Open" />
+                        <Button fx:id="openDataBtn" layoutX="332.0" layoutY="22.0" mnemonicParsing="false" onAction="#actionOpenData" prefHeight="31.0" prefWidth="80.0" text="Open" />
                         <Label layoutX="26.0" layoutY="28.0" text="Input Data Directory:" />
                         <Label layoutX="442.0" layoutY="27.0" text="Input Data Format:" />
-                        <Button fx:id="loadInputFormatBtn" layoutX="756.0" layoutY="22.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="50.0" text="Load">
+                        <Button fx:id="loadInputFormatBtn" layoutX="756.0" layoutY="22.0" mnemonicParsing="false" onAction="#actionLoadInputFormat" prefHeight="31.0" prefWidth="50.0" text="Load">
                            <font>
                               <Font size="12.0" />
                            </font>
                         </Button>
                         <Separator layoutX="682.0" layoutY="20.0" orientation="VERTICAL" prefHeight="35.0" prefWidth="0.0" />
-                        <Button fx:id="trajHelpBtn" cancelButton="true" layoutX="307.0" layoutY="266.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="103.0" text="Help" underline="true">
+                        <Button fx:id="helpBtn" cancelButton="true" layoutX="308.0" layoutY="211.0" mnemonicParsing="false" onAction="#actionHelp" prefHeight="40.0" prefWidth="103.0" text="Help" underline="true">
                            <effect>
                               <Blend />
                            </effect>
@@ -76,40 +76,56 @@
                               <Cursor fx:constant="HAND" />
                            </cursor>
                         </Button>
-                        <ChoiceBox fx:id="outputDatabaseChoice" layoutX="196.0" layoutY="211.0" prefHeight="31.0" prefWidth="214.0" />
-                        <Label layoutX="28.0" layoutY="216.0" text="Select Output Database:" />
                      </children>
                   </AnchorPane>
             </content>
           </Tab>
-          <Tab fx:id="mapLoaderTab" disable="true" text="Map Data Loader">
-            <content>
-              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+            <Tab fx:id="trajectoryGeneratorTab" text="Generate Synthetic">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
                         <Separator layoutX="15.0" layoutY="11.0" prefHeight="3.0" prefWidth="800.0" />
-                        <Button fx:id="loadParseMapBtn" defaultButton="true" layoutX="26.0" layoutY="152.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="180.0" text="Load and Parse" />
-                        <Button fx:id="mapHelpBtn" cancelButton="true" layoutX="219.0" layoutY="152.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="84.0" text="Help" underline="true">
-                           <effect>
-                              <Blend />
-                           </effect>
-                           <cursor>
-                              <Cursor fx:constant="HAND" />
-                           </cursor>
-                        </Button>
-                        <TitledPane animated="false" collapsible="false" layoutX="26.0" layoutY="32.0" prefHeight="107.0" prefWidth="770.0" text="OpenStreetMap (OSM) File">
+                        <TitledPane animated="false" collapsible="false" layoutX="207.0" layoutY="164.0" prefHeight="95.0" prefWidth="611.0" text="Area Coverage">
                           <content>
-                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="95.0" prefWidth="530.0">
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="343.0">
                                  <children>
-                                    <TextField fx:id="inputMapPathTxt" layoutX="128.0" layoutY="21.0" prefHeight="31.0" prefWidth="620.0" promptText="Select OSM File" />
-                                    <Button fx:id="openMapBtn" layoutX="25.0" layoutY="21.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="80.0" text="Open " />
+                                    <Label layoutX="9.0" layoutY="19.0" text="MinX:" />
+                                    <Label layoutX="160.0" layoutY="19.0" text="MinY:" />
+                                    <TextField fx:id="minXTxt" layoutX="54.0" layoutY="14.0" prefHeight="31.0" prefWidth="85.0" text="0" />
+                                    <TextField fx:id="minYTxt" layoutX="204.0" layoutY="14.0" prefHeight="31.0" prefWidth="85.0" text="0" />
+                                    <Label layoutX="306.0" layoutY="19.0" text="MaxX:" />
+                                    <Label layoutX="458.0" layoutY="19.0" text="MaxY:" />
+                                    <TextField fx:id="maxYTxt" layoutX="506.0" layoutY="14.0" prefHeight="31.0" prefWidth="85.0" text="100" />
+                                    <TextField fx:id="maxXTxt" layoutX="353.0" layoutY="14.0" prefHeight="31.0" prefWidth="85.0" text="100" />
                                  </children>
                               </AnchorPane>
                           </content>
                         </TitledPane>
+                        <TitledPane animated="false" collapsible="false" layoutX="206.0" layoutY="19.0" prefHeight="133.0" prefWidth="610.0" text="Trajectory Properties">
+                          <content>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                 <children>
+                                    <Label layoutX="12.0" layoutY="19.0" text="Min. Points:" />
+                                    <Label layoutX="11.0" layoutY="62.0" text="Max. Points:" />
+                                    <TextField fx:id="minPointsTxt" layoutX="97.0" layoutY="14.0" prefHeight="31.0" prefWidth="80.0" text="10" />
+                                    <TextField fx:id="maxPointsTxt" layoutX="97.0" layoutY="57.0" prefHeight="31.0" prefWidth="80.0" text="100" />
+                                    <Label layoutX="215.0" layoutY="18.0" text="Min. Start Time (ms):" />
+                                    <Label layoutX="214.0" layoutY="62.0" text="Max. Start Time (ms):" />
+                                    <Label layoutX="481.0" layoutY="33.0" text="Time Rate (ms):" />
+                                    <TextField fx:id="minTimeTxt" layoutX="359.0" layoutY="13.0" prefHeight="31.0" prefWidth="80.0" text="0" />
+                                    <TextField fx:id="maxTimeTxt" layoutX="359.0" layoutY="57.0" prefHeight="31.0" prefWidth="80.0" text="1000" />
+                                    <TextField fx:id="timeRateTxt" layoutX="481.0" layoutY="56.0" prefHeight="31.0" prefWidth="100.0" text="1000" />
+                                 </children>
+                              </AnchorPane>
+                          </content>
+                        </TitledPane>
+                        <Button fx:id="generateBtn" defaultButton="true" layoutX="19.0" layoutY="97.0" mnemonicParsing="false" onAction="#actionGenerateSynthetic" prefHeight="37.0" prefWidth="160.0" text="Generate Random" />
+                        <Label layoutX="19.0" layoutY="23.0" text="Number of Trajectories:" />
+                        <TextField fx:id="quantityTxt" layoutX="19.0" layoutY="51.0" prefHeight="31.0" prefWidth="160.0" />
                      </children>
                   </AnchorPane>
-            </content>
-          </Tab>
+              </content>
+            </Tab>
         </tabs>
       </TabPane>
       <Separator layoutX="16.0" layoutY="555.0" prefHeight="1.0" prefWidth="800.0" />
@@ -130,7 +146,7 @@
             </Tab>
         </tabs>
       </TabPane>
-      <Separator layoutX="14.0" layoutY="360.0" prefHeight="3.0" prefWidth="800.0" />
+      <Separator layoutX="16.0" layoutY="316.0" prefHeight="3.0" prefWidth="800.0" />
       <TitledPane animated="false" collapsible="false" layoutX="28.0" layoutY="373.0" text="Configure Output Database">
          <content>
             <TabPane fx:id="dbConfPane" prefHeight="140.0" prefWidth="778.0" tabClosingPolicy="UNAVAILABLE">
@@ -141,7 +157,7 @@
                           <content>
                             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="200.0" prefWidth="200.0">
                                  <children>
-                                    <Button fx:id="openOuputFolderBtn" layoutX="673.0" layoutY="46.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="80.0" text="Open" />
+                                    <Button fx:id="openOuputFolderBtn" layoutX="673.0" layoutY="46.0" mnemonicParsing="false" onAction="#actionOpenOutputFolder" prefHeight="31.0" prefWidth="80.0" text="Open" />
                                     <Label layoutX="24.0" layoutY="13.0" text="Output Data Directory:" />
                                     <TextField fx:id="outputDataPathTxt" layoutX="24.0" layoutY="46.0" prefHeight="31.0" prefWidth="630.0" promptText="Local Path to Output Data" />
                                  </children>
@@ -183,24 +199,39 @@
                         </ScrollPane>
                      </content>
                   </Tab>
-                  <Tab fx:id="hbaseTab" closable="false" disable="true" text="HBase (HDFS)">
+                  <Tab fx:id="hdfsTab" closable="false" disable="true" text="HDFS (Hadoop)">
                      <content>
-                        <ScrollPane prefHeight="91.0" prefWidth="778.0">
-                          <content>
-                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="99.0" prefWidth="757.0" />
-                          </content>
-                        </ScrollPane>
+                        <AnchorPane prefHeight="200.0" prefWidth="200.0">
+                           <children>
+                              <Label layoutX="52.0" layoutY="20.0" text="Host Name:" />
+                              <Label layoutX="14.0" layoutY="62.0" text="Output Directory:" />
+                              <Label layoutX="512.0" layoutY="20.0" text="Port Number:" />
+                              <TextField fx:id="hdfsHostnameTxt" layoutX="142.0" layoutY="15.0" prefHeight="31.0" prefWidth="330.0" />
+                              <TextField fx:id="hdfsPortnumberTxt" alignment="CENTER_RIGHT" layoutX="618.0" layoutY="15.0" prefHeight="31.0" prefWidth="124.0" />
+                              <TextField fx:id="hdfsOutputDirTxt" layoutX="143.0" layoutY="57.0" prefHeight="31.0" prefWidth="329.0" />
+                              <Button fx:id="hdfsSetDefaultBtn" layoutX="642.0" layoutY="57.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="100.0" text="Set Default">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Button>
+                           </children>
+                        </AnchorPane>
                      </content>
                   </Tab>
                   <Tab fx:id="voltdbTab" closable="false" disable="true" text="VoltDB (In-Memory)">
                     <content>
                       <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                            <children>
-                              <ScrollPane prefHeight="200.0" prefWidth="200.0">
-                                 <content>
-                                    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="99.0" prefWidth="760.0" />
-                                 </content>
-                              </ScrollPane>
+                              <Label layoutX="22.0" layoutY="20.0" text="Username:" />
+                              <Label layoutX="24.0" layoutY="62.0" text="Password:" />
+                              <Label layoutX="302.0" layoutY="20.0" text="Server Name:" />
+                              <TextField fx:id="voltdbUsernameTxt" layoutX="105.0" layoutY="15.0" prefHeight="31.0" prefWidth="150.0" />
+                              <TextField fx:id="voltdbServerNameTxt" layoutX="401.0" layoutY="15.0" prefHeight="31.0" prefWidth="360.0" />
+                              <TextField fx:id="voltdbPasswordTxt" accessibleRole="PASSWORD_FIELD" layoutX="105.0" layoutY="57.0" prefHeight="31.0" prefWidth="150.0" />
+                              <Label layoutX="282.0" layoutY="62.0" text="Trajectory Table:" />
+                              <TextField fx:id="voltdbTrajectoryTableTxt" disable="true" editable="false" layoutX="401.0" layoutY="57.0" prefHeight="31.0" prefWidth="120.0" text="TRAJECTORY" />
+                              <TextField fx:id="voltdbPointTableTxt" disable="true" editable="false" layoutX="641.0" layoutY="57.0" prefHeight="31.0" prefWidth="120.0" text="POINT" />
+                              <Label layoutX="555.0" layoutY="62.0" text="Point Table:" />
                            </children>
                         </AnchorPane>
                     </content>
@@ -209,5 +240,7 @@
             </TabPane>
          </content>
       </TitledPane>
+      <ChoiceBox fx:id="outputDatabaseChoice" layoutX="194.0" layoutY="331.0" onAction="#actionOutputDatabaseChoice" prefHeight="31.0" prefWidth="214.0" />
+      <Label layoutX="27.0" layoutY="336.0" text="Select Output Database:" />
    </children>
 </Pane>
