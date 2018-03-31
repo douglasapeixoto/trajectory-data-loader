@@ -466,19 +466,30 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 	        }
 	    });
 	}	
-	
+
 	/**
-	 * Open the Map help HTML page. 
+	 * Open and show the content of an HTML file
+	 * in a browser-like window.
+	 * 
+	 * @see HelpBrowser
 	 */
 	@FXML
 	private void actionHelp() {
-		// show the trajectory loader help window
-		helpBtn.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				showHtmlPage("trajectory-loader-help-index.html");
-			}
-		});
+		// HTML file must be inside the application's resources folder.
+		final String helpHtmlFile = "trajectory-loader-help-index.html";
+		try {
+			String helpContent = IOService.
+					readResourcesFileContent(helpHtmlFile);
+			Scene scene = new Scene(
+					new HelpBrowser(helpContent, 750, 500), 
+					Color.web("#666970")); ;
+			Stage outputStage = new Stage();
+			outputStage.setTitle("TraMiner Help");
+			outputStage.setScene(scene);
+			outputStage.show();
+		} catch (IOException e) {
+			addLogError("Error opening help HTML file.");
+		}		
 	}
 	
 	/**
@@ -909,31 +920,6 @@ public class DataLoaderGUIController implements Initializable, ParserInterface {
 		}
 		
 		return validate;
-	}
-	
-	/**
-	 * Open and show the content of an HTML file
-	 * in a browser-like window.
-	 * 
-	 * @see HelpBrowser
-	 * 
-	 * @param htmlFileName The name of the HTML file to load.
-	 * HTML file must be inside the application's resources folder.
-	 */
-	private void showHtmlPage(String htmlFileName){
-		try {
-			String helpContent = IOService.
-					readResourcesFileContent(htmlFileName);
-			Scene scene = new Scene(
-					new HelpBrowser(helpContent, 750, 500), 
-					Color.web("#666970")); ;
-			Stage outputStage = new Stage();
-			outputStage.setTitle("TraMiner Help");
-			outputStage.setScene(scene);
-			outputStage.show();
-		} catch (IOException e) {
-			addLogError("Error opening help HTML file.");
-		}
 	}
 
 	/**
